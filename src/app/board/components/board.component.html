@@ -1,0 +1,44 @@
+<div></div>
+<ng-template [ngTemplateOutlet]="xAxis"></ng-template>
+<div></div>
+<ng-template [ngTemplateOutlet]="yAxis"></ng-template>
+<div class="board" cdkDropListGroup>
+  <div class="row" *ngFor="let row of [0, 1, 2, 3, 4, 5, 6, 7]">
+    <div class="cell" *ngFor="let column of [0, 1, 2, 3, 4, 5, 6, 7]"
+         cdkDropList
+         [cdkDropListData]="{row, column}"
+         (cdkDropListDropped)="move($event)"
+         (click)="select({row, column})"
+         [class.color]="column % 2 !== row % 2"
+         [class.to]="showTo(row, column)">
+      <img *ngIf="displayPiece(row, column)"
+           cdkDrag
+           alt="figure"
+           class="piece"
+           [cdkDragData]="{row, column}"
+           [src]="imageSrc(row, column)"/>
+    </div>
+  </div>
+</div>
+<ng-template [ngTemplateOutlet]="yAxis"></ng-template>
+<div></div>
+<ng-template [ngTemplateOutlet]="xAxis"></ng-template>
+<div></div>
+
+
+
+<ng-template #xAxis>
+  <div class="x-axis">
+    <div class="letter" *ngFor="let letter of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']">
+      {{letter}}
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #yAxis>
+  <div class="y-axis">
+    <div class="number" *ngFor="let number of [8, 7, 6, 5, 4, 3, 2, 1]">
+      {{number}}
+    </div>
+  </div>
+</ng-template>
