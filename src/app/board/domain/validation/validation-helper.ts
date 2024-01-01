@@ -6,7 +6,15 @@ import {Piece} from "../model/piece";
 export abstract class ValidationHelper {
 
   getPiece(coordinate: Coordinate, board: Field[][]): Piece | undefined {
-    return board[coordinate.row][coordinate.column].piece;
+    if (this.isValidCoordinate(coordinate)) {
+      return board[coordinate.row][coordinate.column].piece;
+    }
+    return;
+  }
+
+  isValidCoordinate(coordinate: Coordinate): boolean {
+    const size = [0, 1, 2, 3, 4, 5, 6, 7];
+    return size.includes(coordinate.row) && size.includes(coordinate.column);
   }
 
   isEmptyField(row: number, column: number, board: Field[][]): boolean {
@@ -35,10 +43,6 @@ export abstract class ValidationHelper {
 
   getDirectionRow(from: Coordinate, to: Coordinate): number {
     return from.row - to.row < 0 ? 1 : -1;
-  }
-
-  getDirection(color: PieceColor) {
-    return color === PieceColor.WHITE ? 1 : -1;
   }
 
   isRegularMove(to: Coordinate, board: Field[][]): boolean {

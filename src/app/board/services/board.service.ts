@@ -30,6 +30,18 @@ export class BoardService {
       distinctUntilChanged(isEqual));
   }
 
+  getLastMove(): Observable<Move | undefined> {
+    return this.store$.pipe(
+      select(selectChessState),
+      map(state => {
+        if (state.historyMoves.length > 0) {
+          return state.historyMoves[state.historyMoves.length - 1];
+        }
+        return;
+      }),
+      distinctUntilChanged(isEqual));
+  }
+
   createBoard(): Field[][] {
     const board: Field[][] = [];
     [0, 1, 2, 3, 4, 5, 6, 7].forEach(row => {

@@ -3,98 +3,122 @@ import {Field} from "../model/field";
 import {ValidationStrategy} from "./validation-strategy";
 import {PieceColor} from "../model/piece-color";
 import {ValidationHelper} from "./validation-helper";
-import {ValidatedMove} from "../model/validated-move";
 import {Move} from "../model/move";
-import {PieceType} from "../model/piece-type";
 import {inject} from "@angular/core";
 import {BoardService} from "../../services/board.service";
 import {MoveType} from "../model/move-type";
+import {CheckTarget} from "../model/check-target";
+import {PieceType} from "../model/piece-type";
 
 export class PawnValidator extends ValidationHelper implements ValidationStrategy {
 
-  history!: Move[];
+  lastMove?: Move;
 
   boardService = inject(BoardService);
 
   constructor() {
     super();
-    this.boardService.getHistoryOfMoves()
-      .subscribe(history => this.history = history);
+    this.boardService.getLastMove()
+      .subscribe(lastMove => this.lastMove = lastMove);
   }
 
-  validateMove(from: Coordinate, to: Coordinate, board: Field[][]): MoveType {
+  checkDestination(from: Coordinate, board: Field[][]): Map<Coordinate, MoveType> {
+    const toMap: Map<Coordinate, MoveType> = new Map<Coordinate, MoveType>;
     const color: PieceColor = this.getPieceColor(from, board)!;
     const direction: number = this.getDirection(color);
-    const move: ValidatedMove = { from, to, color, board };
+    const target: CheckTarget = { from, color, board, direction };
 
-    return this.getMoveType(move, direction);
+    this.checkShortMove(target, toMap)
+    this.checkLongMove(target, toMap);
+    this.checkCapture(target, toMap);
+    this.checkEnPassant(target, toMap);
+
+    return toMap;
   }
 
-  private getMoveType(move: ValidatedMove, direction: number): MoveType {
-    switch (true) {
-      case this.isLongMove(move, direction):
-      case this.isShortMove(move, direction):
-        return MoveType.REGULAR;
+  private checkShortMove(target: CheckTarget, map: Map<Coordinate, MoveType>) {
+    const {from, color, board, direction} = target;
+    const to = this.getToShortMove(from, direction!);
 
-      case this.isCapture(move, direction):
-        return MoveType.CAPTURE;
-
-      case this.isEnPassant(move, direction):
-        return MoveType.EN_PASSANT;
-
-      default:
-        return MoveType.INVALID;
+    if (this.isEmptyField2(to, board)) {
+      map.set(to, MoveType.REGULAR);
     }
   }
 
-  private isLongMove(move: ValidatedMove, direction: number): boolean {
-    const {from, to, color, board} = move;
+  private checkLongMove(target: CheckTarget, map: Map<Coordinate, MoveType>) {
+    const {from, color, board, direction} = target;
+    const to = this.getToLongMove(from, direction!);
 
-    return from.column === to.column
-      && this.getStartRow(color) === from.row
-      && this.getDistanceRow(from, to) === 2 * direction
-      && this.isEmptyField(to.row, to.column, board)
-      && this.isEmptyField(from.row - direction, from.column, board);
-  }
-
-  private isShortMove(move: ValidatedMove, direction: number): boolean {
-    const {from, to, board} = move;
-
-    return from.column === to.column
-      && this.getDistanceRow(from, to) === direction
-      && this.isEmptyField(to.row, to.column, board);
-  }
-
-  private isDiagonal(move: ValidatedMove, direction: number) {
-    const { from, to} = move;
-
-    return this.getDistanceRow(from, to) === direction
-      && Math.abs(this.getDistanceColumn(from, to)) === 1;
-  }
-
-  private isCapture(move: ValidatedMove, direction: number) {
-    const { to, color, board} = move;
-
-    return this.isDiagonal(move, direction)
-      && !!this.getPiece(to, board) && this.getPieceColor(to, board) !== color;
-  }
-
-  private isEnPassant(move: ValidatedMove, direction: number) {
-    const {from, to, color, board} = move;
-    if (this.isDiagonal(move, direction) && this.history.length > 1) {
-      const lastMove: Move = this.history[this.history.length - 1];
-
-      return this.getDistanceRow(lastMove.from, lastMove.to) === -2 * direction
-        && this.isEmptyField(move.to.row, move.to.column, board)
-        && lastMove.piece.type === PieceType.PAWN
-        && lastMove.piece.color !== color
-        && lastMove.to.column === to.column
-        && lastMove.to.row === from.row;
+    if (this.isEmptyField2(to, board) && from.row === this.getStartRow(color!)) {
+      map.set(to, MoveType.REGULAR);
     }
-    return false;
+  }
+
+  private getToShortMove(from: Coordinate, direction: number) {
+    return {row: from.row + direction, column: from.column};
+  }
+
+  private getToLongMove(from: Coordinate, direction: number) {
+    return {row: from.row + direction * 2, column: from.column};
+  }
+
+  private getDirection(color: PieceColor) {
+    return color === PieceColor.WHITE ? -1 : 1;
   }
 
   private getStartRow(color: PieceColor) {
     return color === PieceColor.WHITE ? 6 : 1;
+  }
+
+  private checkCapture(target: CheckTarget, map: Map<Coordinate, MoveType>): Map<Coordinate, MoveType> {
+    const {from, color, board, direction} = target;
+    const toLeftDiagonal = this.getToLeftDiagonal(from, direction!)
+    const toRightDiagonal = this.getToRightDiagonal(from, direction!)
+
+    if (this.isOpponentPiece(toLeftDiagonal, board, color!)) {
+      map.set(toLeftDiagonal, MoveType.CAPTURE)
+    }
+    if (this.isOpponentPiece(toRightDiagonal, board, color!)) {
+      map.set(toRightDiagonal, MoveType.CAPTURE)
+    }
+    return map;
+  }
+
+  private isOpponentPiece(toLeftDiagonal: Coordinate, board: Field[][], color: PieceColor) {
+    return !!this.getPiece(toLeftDiagonal, board) && this.getPieceColor(toLeftDiagonal, board) !== color;
+  }
+
+  private getToLeftDiagonal(from: Coordinate, direction: number): Coordinate {
+    return {row: from.row + direction, column: from.column + direction};
+  }
+
+  private getToRightDiagonal(from: Coordinate, direction: number): Coordinate {
+    return {row: from.row + direction, column: from.column - direction};
+  }
+
+  private checkEnPassant(target: CheckTarget, map: Map<Coordinate, MoveType>): Map<Coordinate, MoveType> {
+    const {from, direction} = target;
+    if (!!this.lastMove) {
+      const toLeftDiagonal = this.getToLeftDiagonal(from, direction!)
+      const toRightDiagonal = this.getToRightDiagonal(from, direction!)
+
+      if (this.isEnPassant(target, toLeftDiagonal, this.lastMove)) {
+        map.set(toLeftDiagonal, MoveType.EN_PASSANT);
+      }
+      if (this.isEnPassant(target, toRightDiagonal, this.lastMove)) {
+        map.set(toRightDiagonal, MoveType.EN_PASSANT);
+      }
+    }
+    return map;
+  }
+
+  private isEnPassant(target: CheckTarget, to: Coordinate, lastMove: Move) {
+    const {from, color, board, direction} = target;
+    return this.getDistanceRow(lastMove.from, lastMove.to) === 2 * direction!
+      && this.isEmptyField(to.row, to.column, board)
+      && lastMove.piece.type === PieceType.PAWN
+      && lastMove.piece.color !== color
+      && lastMove.to.column === to.column
+      && lastMove.to.row === from.row;
   }
 }

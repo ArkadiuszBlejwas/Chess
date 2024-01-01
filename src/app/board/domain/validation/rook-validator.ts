@@ -6,16 +6,22 @@ import {MoveType} from "../model/move-type";
 
 export class RookValidator extends ValidationHelper implements ValidationStrategy {
 
-  validateMove(from: Coordinate, to: Coordinate, board: Field[][]): MoveType {
+  checkDestination(from: Coordinate, board: Field[][]): Map<Coordinate, MoveType> {
+    const toMap: Map<Coordinate, MoveType> = new Map<Coordinate, MoveType>;
 
-    if (this.isVerticalMove(from, to, board) || this.isHorizontalMove(from, to, board)) {
-      if (this.isRegularMove(to, board)) {
-        return MoveType.REGULAR
-      }
-      if (this.isCaptureMove(from, to, board)) {
-        return MoveType.CAPTURE;
-      }
-    }
-    return MoveType.INVALID;
+    return toMap;
   }
+
+  // validateMove(from: Coordinate, to: Coordinate, board: Field[][]): MoveType {
+  //
+  //   if (this.isVerticalMove(from, to, board) || this.isHorizontalMove(from, to, board)) {
+  //     if (this.isRegularMove(to, board)) {
+  //       return MoveType.REGULAR
+  //     }
+  //     if (this.isCaptureMove(from, to, board)) {
+  //       return MoveType.CAPTURE;
+  //     }
+  //   }
+  //   return MoveType.INVALID;
+  // }
 }
