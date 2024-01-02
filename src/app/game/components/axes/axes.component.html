@@ -1,0 +1,25 @@
+<div></div>
+<ng-template [ngTemplateOutlet]="xAxis"></ng-template>
+<div></div>
+<ng-template [ngTemplateOutlet]="yAxis"></ng-template>
+<ng-content></ng-content>
+<ng-template [ngTemplateOutlet]="yAxis"></ng-template>
+<div></div>
+<ng-template [ngTemplateOutlet]="xAxis"></ng-template>
+<div></div>
+
+<ng-template #xAxis>
+  <div class="x-axis">
+    <div class="letter" *ngFor="let letter of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']">
+      {{ letter }}
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #yAxis>
+  <div class="y-axis">
+    <div class="number" *ngFor="let number of [8, 7, 6, 5, 4, 3, 2, 1]">
+      {{ number }}
+    </div>
+  </div>
+</ng-template>

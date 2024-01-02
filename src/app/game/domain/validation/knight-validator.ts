@@ -7,7 +7,7 @@ import {PieceColor} from "../model/piece-color";
 
 export class KnightValidator extends ValidationHelper implements ValidationStrategy {
 
-  checkDestination(from: Coordinate, board: Field[][]): Map<string, MoveType> {
+  checkTarget(from: Coordinate, board: Field[][]): Map<string, MoveType> {
     const toMap: Map<string, MoveType> = new Map<string, MoveType>;
     const color: PieceColor = this.getOpponentColor(from, board)!;
 
@@ -37,7 +37,7 @@ export class KnightValidator extends ValidationHelper implements ValidationStrat
   }
 
   private validateCoordinate(leftTopCoordinate: Coordinate, board: Field[][], color: PieceColor, toMap: Map<string, MoveType>) {
-    if (this.isEmptyField2(leftTopCoordinate, board)) {
+    if (this.isEmptyField(leftTopCoordinate, board)) {
       toMap.set(JSON.stringify(leftTopCoordinate), MoveType.REGULAR);
     }
     if (color === this.getPieceColor(leftTopCoordinate, board)) {

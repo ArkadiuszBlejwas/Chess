@@ -12,16 +12,7 @@ export abstract class ValidationHelper {
     return;
   }
 
-  isValidCoordinate(coordinate: Coordinate): boolean {
-    const size = [0, 1, 2, 3, 4, 5, 6, 7];
-    return size.includes(coordinate.row) && size.includes(coordinate.column);
-  }
-
-  isEmptyField(row: number, column: number, board: Field[][]): boolean {
-    return this.isValidCoordinate({row, column}) && !this.getPiece({row, column}, board);
-  }
-
-  isEmptyField2(coordinate: Coordinate, board: Field[][]): boolean {
+  isEmptyField(coordinate: Coordinate, board: Field[][]): boolean {
     return this.isValidCoordinate(coordinate) && !this.getPiece(coordinate, board);
   }
 
@@ -32,11 +23,12 @@ export abstract class ValidationHelper {
     return;
   }
 
-  getOpponentColor(from: Coordinate, board: Field[][]): PieceColor {
-    return this.getPieceColor(from, board) === PieceColor.WHITE ? PieceColor.BLACK : PieceColor.WHITE;
+  isValidCoordinate(coordinate: Coordinate): boolean {
+    const size = [0, 1, 2, 3, 4, 5, 6, 7];
+    return size.includes(coordinate.row) && size.includes(coordinate.column);
   }
 
-  getDistanceRow(from: Coordinate, to: Coordinate): number {
-    return from.row - to.row;
+  getOpponentColor(from: Coordinate, board: Field[][]): PieceColor {
+    return this.getPieceColor(from, board) === PieceColor.WHITE ? PieceColor.BLACK : PieceColor.WHITE;
   }
 }

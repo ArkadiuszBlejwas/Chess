@@ -6,7 +6,7 @@ import {provideClientHydration} from '@angular/platform-browser';
 import {provideState, provideStore} from '@ngrx/store';
 import {provideEffects} from '@ngrx/effects';
 import {provideRouterStore} from '@ngrx/router-store';
-import {chessReducer} from "./board/state/reducer";
+import {chessReducer} from "./game/state/reducer";
 import { provideAnimations } from '@angular/platform-browser/animations';
 
 export const appConfig: ApplicationConfig = {

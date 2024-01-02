@@ -6,17 +6,12 @@ import {QueenValidator} from "./queen-validator";
 import {KnightValidator} from "./knight-validator";
 import {RookValidator} from "./rook-validator";
 import {BishopValidator} from "./bishop-validator";
-import {ValidatedMove} from "../model/validated-move";
-import {InitialValidator} from "./initial-validator";
 import {MoveType} from "../model/move-type";
 import {CheckTarget} from "../model/check-target";
-import {Coordinate} from "../model/coordinate";
 
 export class ContextStrategy {
 
   private strategyMap!: Map<PieceType, ValidationStrategy>;
-
-  private initialValidator = new InitialValidator();
 
   constructor() {
     this.strategyMap = new Map<PieceType, ValidationStrategy>([
@@ -29,14 +24,9 @@ export class ContextStrategy {
     ]);
   }
 
-  validateMove(pieceType: PieceType, target: CheckTarget): Map<string, MoveType> {
-    // if (this.initialValidator.validateInitial(move)) {
-    //   const {from, to, board} = move;
-    //   return this.getValidator(pieceType).validateMove(from, to, board);
-    // }
-    // return MoveType.INVALID;
+  validateTarget(pieceType: PieceType, target: CheckTarget): Map<string, MoveType> {
     const { from, board } = target;
-    return this.getValidator(pieceType).checkDestination(from, board);
+    return this.getValidator(pieceType).checkTarget(from, board);
   }
 
   private getValidator(pieceType: PieceType): ValidationStrategy {

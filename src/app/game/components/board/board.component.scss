@@ -55,7 +55,6 @@ img, .cell, .dot {
 }
 
 .letter {
-  //display: inline-block;
   height: 20px;
   width: 60px;
   display: flex;
@@ -69,10 +68,6 @@ img, .cell, .dot {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  //text-align: center;
-  //position: relative;
-  //transform: translateY(30%);
 }
 
 .piece {
@@ -85,29 +80,11 @@ img, .cell, .dot {
 
 .cdk-drop-list-dragging .piece.cdk-drag-placeholder {
   display: none;
-  //opacity: 0;
-  //visibility: hidden;
 }
 
 .piece:not(.cdk-drag-preview) {
   transform: none !important;
 }
-
-//.cdk-drag-preview {
-//  transition: all 800ms cubic-bezier(0, 0, 0.2, 1);
-//}
-
-//.cdk-drag-preview {
-//  display: none;
-//}
-
-//.cdk-drag-animating {
-//  transition: transform 500ms cubic-bezier(0, 0, 0.2, 1);
-//}
-//
-//.cdk-drop-list-dragging {
-//  transition: transform 550ms cubic-bezier(0, 0, 0.2, 1);
-//}
 
 .selected, .target {
   background-color: rgba(0, 90, 0, .35);

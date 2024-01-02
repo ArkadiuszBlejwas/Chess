@@ -1,19 +1,20 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, inject} from '@angular/core';
 import {CommonModule} from "@angular/common";
-import {PieceType} from "../domain/model/piece-type";
+import {PieceType} from "../../domain/model/piece-type";
 import {CdkDragDrop, DragDropModule} from "@angular/cdk/drag-drop";
-import {Coordinate} from "../domain/model/coordinate";
-import {Field} from "../domain/model/field";
-import {PieceColor} from "../domain/model/piece-color";
-import {Piece} from "../domain/model/piece";
-import {BoardService} from "../services/board.service";
+import {Coordinate} from "../../domain/model/coordinate";
+import {Field} from "../../domain/model/field";
+import {PieceColor} from "../../domain/model/piece-color";
+import {Piece} from "../../domain/model/piece";
+import {BoardService} from "../../services/board.service";
 import {cloneDeep} from "lodash-es";
-import {MoveType} from "../domain/model/move-type";
-import {ContextStrategy} from "../domain/validation/context-strategy";
+import {MoveType} from "../../domain/model/move-type";
+import {ContextStrategy} from "../../domain/validation/context-strategy";
 import {MatDialog, MatDialogRef} from "@angular/material/dialog";
-import {PromotionComponent} from "./promotion/promotion.component";
-import {CheckTarget} from "../domain/model/check-target";
-import {GameState} from "../state/state";
+import {PromotionComponent} from "../promotion/promotion.component";
+import {CheckTarget} from "../../domain/model/check-target";
+import {GameState} from "../../state/state";
+import {ValidationStrategy} from "../../domain/validation/validation-strategy";
 
 @Component({
   selector: 'board',
@@ -82,7 +83,7 @@ export class BoardComponent {
     if (this.board[row][column].piece?.color === this.currentColor) {
       const piece: Piece = this.board[row][column].piece!;
       const target: CheckTarget = {from: {row, column}, board: this.board};
-      this.targetMap = this.contextStrategy.validateMove(piece.type, target);
+      this.targetMap = this.contextStrategy.validateTarget(piece.type, target);
       this.selectedPiece = {row, column};
     }
   }
@@ -139,24 +140,47 @@ export class BoardComponent {
         this.makeCastlingMove(from, to, piece, copyBoard);
         break;
     }
-    return !this.isKingInCheck(copyBoard);
+    return !this.isKingInCheck2(copyBoard);
   }
 
   private isKingInCheck(board: Field[][] = this.board, color: PieceColor = this.currentColor): boolean {
-    const oppositeColor = this.getOppositeColor(color);
+    const oppositeColor: PieceColor = this.getOppositeColor(color);
     const piecesCoordinates: Coordinate[] = this.getPiecesCoordinates(board, oppositeColor)!;
     const kingCoordinate: Coordinate = this.getKingCoordinate(board, color)!;
 
-    let result = false;
-    piecesCoordinates.forEach(coordinate => {
+    for (let coordinate of piecesCoordinates) {
       const target: CheckTarget = {from: coordinate, color: oppositeColor, board};
       const piece: Piece = board[coordinate.row][coordinate.column].piece!;
-      const mapTarget = this.contextStrategy.validateMove(piece.type, target);
+      const mapTarget = this.contextStrategy.validateTarget(piece.type, target);
       if (mapTarget.has(JSON.stringify(kingCoordinate))) {
-        result = true;
+        return true;
       }
-    });
-    return result;
+    }
+    return false;
+  }
+
+  private isKingInCheck2(board: Field[][] = this.board, color: PieceColor = this.currentColor): boolean {
+    const oppositeColor: PieceColor = this.getOppositeColor(color);
+    const kingCoordinate: Coordinate = this.getKingCoordinate(board, color)!;
+
+    const target: CheckTarget = {from: kingCoordinate, board};
+    const arrayMapTarget = new Map<PieceType, Map<string, MoveType>>([
+      [PieceType.ROOK, this.contextStrategy.validateTarget(PieceType.ROOK, target)],
+      [PieceType.BISHOP, this.contextStrategy.validateTarget(PieceType.BISHOP, target)],
+      [PieceType.QUEEN, this.contextStrategy.validateTarget(PieceType.QUEEN, target)],
+      [PieceType.KNIGHT, this.contextStrategy.validateTarget(PieceType.KNIGHT, target)],
+      [PieceType.PAWN, this.contextStrategy.validateTarget(PieceType.PAWN, target)]
+    ]);
+    for (let [moveType, mapTarget] of arrayMapTarget) {
+      for (let coordinate of [...mapTarget.keys()]) {
+        const correctCoordinate: Coordinate = JSON.parse(coordinate);
+        const piece = board[correctCoordinate.row][correctCoordinate.column].piece;
+        if (piece?.color === oppositeColor && piece?.type === moveType) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private getKingCoordinate(copyBoard: Field[][], color: PieceColor): Coordinate | undefined {
@@ -266,7 +290,7 @@ export class BoardComponent {
   }
 
   updateGameState() {
-    const isKingInCheck = this.isKingInCheck();
+    const isKingInCheck = this.isKingInCheck2();
     const isAnyMoveValid = this.isAnyMoveValid();
 
     if (isKingInCheck) {
@@ -292,7 +316,7 @@ export class BoardComponent {
 
       const target: CheckTarget = {from: coordinate, color, board: copyBoard};
       const piece: Piece = copyBoard[coordinate.row][coordinate.column].piece!;
-      const mapTarget = this.contextStrategy.validateMove(piece.type, target);
+      const mapTarget = this.contextStrategy.validateTarget(piece.type, target);
 
       for (let [key, value] of mapTarget) {
         const correctKey: Coordinate = JSON.parse(key);

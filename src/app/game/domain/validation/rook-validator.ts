@@ -7,7 +7,7 @@ import {PieceColor} from "../model/piece-color";
 
 export class RookValidator extends ValidationHelper implements ValidationStrategy {
 
-  checkDestination(from: Coordinate, board: Field[][]): Map<string, MoveType> {
+  checkTarget(from: Coordinate, board: Field[][]): Map<string, MoveType> {
     const toMap: Map<string, MoveType> = new Map<string, MoveType>;
     const color: PieceColor = this.getOpponentColor(from, board)!;
 
@@ -25,12 +25,10 @@ export class RookValidator extends ValidationHelper implements ValidationStrateg
 
       topCoordinate = { row: topCoordinate.row - 1, column: topCoordinate.column }
       if (topContinue) {
-        if (this.isEmptyField2(topCoordinate, board)) {
-          console.log('aa')
+        if (this.isEmptyField(topCoordinate, board)) {
           toMap.set(JSON.stringify(topCoordinate), MoveType.REGULAR);
         }
         else if (color === this.getPieceColor(topCoordinate, board)) {
-          console.log('bb')
           toMap.set(JSON.stringify(topCoordinate), MoveType.CAPTURE);
           topContinue = false;
         } else {
@@ -40,7 +38,7 @@ export class RookValidator extends ValidationHelper implements ValidationStrateg
 
       rightCoordinate = { row: rightCoordinate.row, column: rightCoordinate.column + 1 }
       if (rightContinue) {
-        if (this.isEmptyField2(rightCoordinate, board)) {
+        if (this.isEmptyField(rightCoordinate, board)) {
           toMap.set(JSON.stringify(rightCoordinate), MoveType.REGULAR);
         }
         else if (color === this.getPieceColor(rightCoordinate, board)) {
@@ -53,7 +51,7 @@ export class RookValidator extends ValidationHelper implements ValidationStrateg
 
       leftCoordinate = { row: leftCoordinate.row, column: leftCoordinate.column - 1 }
       if (leftContinue) {
-        if (this.isEmptyField2(leftCoordinate, board)) {
+        if (this.isEmptyField(leftCoordinate, board)) {
           toMap.set(JSON.stringify(leftCoordinate), MoveType.REGULAR);
         }
         else if (color === this.getPieceColor(leftCoordinate, board)) {
@@ -66,7 +64,7 @@ export class RookValidator extends ValidationHelper implements ValidationStrateg
 
       bottomCoordinate = { row: bottomCoordinate.row + 1, column: bottomCoordinate.column }
       if (bottomContinue) {
-        if (this.isEmptyField2(bottomCoordinate, board)) {
+        if (this.isEmptyField(bottomCoordinate, board)) {
           toMap.set(JSON.stringify(bottomCoordinate), MoveType.REGULAR);
         }
         else if (color === this.getPieceColor(bottomCoordinate, board)) {

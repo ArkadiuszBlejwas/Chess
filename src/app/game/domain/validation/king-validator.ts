@@ -23,7 +23,7 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
       .subscribe(history => this.history = history);
   }
 
-  checkDestination(from: Coordinate, board: Field[][]): Map<string, MoveType> {
+  checkTarget(from: Coordinate, board: Field[][]): Map<string, MoveType> {
     const toMap: Map<string, MoveType> = new Map<string, MoveType>;
     const color: PieceColor = this.getOpponentColor(from, board)!;
     const target: CheckTarget = {from, board, color};
@@ -62,7 +62,7 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
   }
 
   private validateCoordinate(leftTopCoordinate: Coordinate, board: Field[][], color: PieceColor, toMap: Map<string, MoveType>) {
-    if (this.isEmptyField2(leftTopCoordinate, board)) {
+    if (this.isEmptyField(leftTopCoordinate, board)) {
       toMap.set(JSON.stringify(leftTopCoordinate), MoveType.REGULAR);
     }
     if (color === this.getPieceColor(leftTopCoordinate, board)) {
@@ -91,14 +91,14 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
   }
 
   private getAreEmptyFieldsForShortCastling(from: Coordinate, board: Field[][]) {
-    return this.isEmptyField(from.row, from.column + 1, board)
-      && this.isEmptyField(from.row, from.column + 2, board);
+    return this.isEmptyField({ row: from.row, column: from.column + 1}, board)
+      && this.isEmptyField({ row: from.row, column: from.column + 2 }, board);
   }
 
   private getAreEmptyFieldsForLongCastling(from: Coordinate, board: Field[][]) {
-    return this.isEmptyField(from.row, from.column - 1, board)
-      && this.isEmptyField(from.row, from.column - 2, board)
-      && this.isEmptyField(from.row, from.column - 3, board);
+    return this.isEmptyField({ row: from.row, column: from.column - 1 }, board)
+      && this.isEmptyField({ row: from.row, column: from.column - 2 }, board)
+      && this.isEmptyField({ row: from.row, column: from.column - 3 }, board);
   }
 
   private isKingWithoutMove(from: Coordinate, board: Field[][]) {

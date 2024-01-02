@@ -1,5 +1,4 @@
 export enum MoveType {
-  INVALID = 'INVALID',
   REGULAR = 'REGULAR',
   CAPTURE = 'CAPTURE',
   CASTLING = 'CASTLING',
