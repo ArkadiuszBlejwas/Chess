@@ -19,26 +19,17 @@ export class ContextStrategy {
   private initialValidator = new InitialValidator();
 
   constructor() {
-    // this.strategyMap = new Map<PieceType, ValidationStrategy>([
-    //   [PieceType.PAWN, new PawnValidator()],
-    //   [PieceType.KING, new KingValidator()],
-    //   [PieceType.ROOK, new RookValidator()],
-    //   [PieceType.QUEEN, new QueenValidator()],
-    //   [PieceType.KNIGHT, new KnightValidator()],
-    //   [PieceType.BISHOP, new BishopValidator()]
-    // ]);
-
     this.strategyMap = new Map<PieceType, ValidationStrategy>([
       [PieceType.PAWN, new PawnValidator()],
-      [PieceType.KING, new PawnValidator()],
-      [PieceType.ROOK, new PawnValidator()],
-      [PieceType.QUEEN, new PawnValidator()],
-      [PieceType.KNIGHT, new PawnValidator()],
-      [PieceType.BISHOP, new PawnValidator()]
+      [PieceType.KING, new KingValidator()],
+      [PieceType.ROOK, new RookValidator()],
+      [PieceType.QUEEN, new QueenValidator()],
+      [PieceType.KNIGHT, new KnightValidator()],
+      [PieceType.BISHOP, new BishopValidator()]
     ]);
   }
 
-  validateMove(pieceType: PieceType, target: CheckTarget): Map<Coordinate, MoveType> {
+  validateMove(pieceType: PieceType, target: CheckTarget): Map<string, MoveType> {
     // if (this.initialValidator.validateInitial(move)) {
     //   const {from, to, board} = move;
     //   return this.getValidator(pieceType).validateMove(from, to, board);

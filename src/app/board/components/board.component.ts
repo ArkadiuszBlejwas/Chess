@@ -13,6 +13,7 @@ import {ContextStrategy} from "../domain/validation/context-strategy";
 import {MatDialog, MatDialogRef} from "@angular/material/dialog";
 import {PromotionComponent} from "./promotion/promotion.component";
 import {CheckTarget} from "../domain/model/check-target";
+import {GameState} from "../state/state";
 
 @Component({
   selector: 'board',
@@ -39,11 +40,13 @@ export class BoardComponent {
 
   selectedPiece?: Coordinate;
 
-  targetMap: Map<Coordinate, MoveType> = new Map<Coordinate, MoveType>;
+  targetMap: Map<string, MoveType> = new Map<string, MoveType>;
 
   selectPiece(row: number, column: number, event: MouseEvent) {
-    event.stopPropagation();
-    this.dragPiece(row, column);
+    if (this.board[row][column].piece?.color === this.currentColor) {
+      event.stopPropagation();
+      this.dragPiece(row, column);
+    }
   }
 
   selectTarget(row: number, column: number) {
@@ -58,7 +61,7 @@ export class BoardComponent {
   }
 
   isTarget(row: number, column: number): boolean {
-    return !![...this.targetMap?.keys()].find(key => key.row === row && key.column === column);
+    return !![...this.targetMap?.keys()].find(key => JSON.stringify({row, column}) === key);
   }
 
   isCapture(row: number, column: number): boolean {
@@ -76,10 +79,12 @@ export class BoardComponent {
   }
 
   dragPiece(row: number, column: number) {
-    const piece: Piece = this.board[row][column].piece!;
-    const target: CheckTarget = { from: { row, column }, board: this.board };
-    this.targetMap = this.contextStrategy.validateMove(piece.type, target);
-    this.selectedPiece = { row, column };
+    if (this.board[row][column].piece?.color === this.currentColor) {
+      const piece: Piece = this.board[row][column].piece!;
+      const target: CheckTarget = {from: {row, column}, board: this.board};
+      this.targetMap = this.contextStrategy.validateMove(piece.type, target);
+      this.selectedPiece = {row, column};
+    }
   }
 
   dropPiece(event: CdkDragDrop<any, Coordinate, Coordinate>) {
@@ -90,22 +95,27 @@ export class BoardComponent {
 
   private validate(from: Coordinate, to: Coordinate) {
     if (this.isTarget(to.row, to.column)) {
-      const moveType = this.targetMap.get(to);
+      const moveType = this.targetMap.get(JSON.stringify(to));
       const piece: Piece = this.board[from.row][from.column].piece!;
 
-      switch (moveType) {
-        case MoveType.REGULAR:
-        case MoveType.CAPTURE:
-          this.makeRegularOrCaptureMove(from, to, piece);
-          break;
-        case MoveType.EN_PASSANT:
-          this.makeEnPassantMove(from, to, piece);
-          break;
-        case MoveType.CASTLING:
-          this.makeCastlingMove(from, to, piece);
-          break;
+      if (this.willNotKingInCheck(moveType!, from, to, piece)) {
+        switch (moveType) {
+          case MoveType.REGULAR:
+          case MoveType.CAPTURE:
+            this.makeRegularOrCaptureMove(from, to, piece);
+            break;
+          case MoveType.EN_PASSANT:
+            this.makeEnPassantMove(from, to, piece);
+            break;
+          case MoveType.CASTLING:
+            this.makeCastlingMove(from, to, piece);
+            break;
+        }
+        this.boardService.addMoveToHistory(cloneDeep({from, to, piece}));
+        this.checkPawnPromotion(to, piece);
+        this.toggleColor();
+        this.updateGameState();
       }
-      this.boardService.addMoveToHistory(cloneDeep({from, to, piece}));
     }
     this.clearSelects();
   }
@@ -115,74 +125,39 @@ export class BoardComponent {
     this.selectedPiece = undefined;
   }
 
-  // move(event: CdkDragDrop<any, Coordinate, Coordinate>) {
-  //   const from: Coordinate = event.item.data;
-  //   const to: Coordinate = event.container.data;
-  //   this.validateMove(from, to);
-  // }
+  private willNotKingInCheck(moveType: MoveType, from: Coordinate, to: Coordinate, piece: Piece) {
+    const copyBoard = cloneDeep(this.board);
+    switch (moveType) {
+      case MoveType.REGULAR:
+      case MoveType.CAPTURE:
+        this.makeRegularOrCaptureMove(from, to, piece, copyBoard);
+        break;
+      case MoveType.EN_PASSANT:
+        this.makeEnPassantMove(from, to, piece, copyBoard);
+        break;
+      case MoveType.CASTLING:
+        this.makeCastlingMove(from, to, piece, copyBoard);
+        break;
+    }
+    return !this.isKingInCheck(copyBoard);
+  }
 
-  // private validateMove(from: Coordinate, to: Coordinate) {
-    // const piece: Piece = this.board[from.row][from.column].piece!;
-    // const move: ValidatedMove = this.getValidatedMove(from, to);
-    // const moveType: MoveType = this.contextStrategy.validateMove(piece.type, move);
-    //
-    // this.isValidMove(moveType, from, to, piece);
-  // }
+  private isKingInCheck(board: Field[][] = this.board, color: PieceColor = this.currentColor): boolean {
+    const oppositeColor = this.getOppositeColor(color);
+    const piecesCoordinates: Coordinate[] = this.getPiecesCoordinates(board, oppositeColor)!;
+    const kingCoordinate: Coordinate = this.getKingCoordinate(board, color)!;
 
-  // private isValidMove(moveType: MoveType, from: Coordinate, to: Coordinate, piece: Piece) {
-  //   if (moveType !== MoveType.INVALID && this.willNotKingInCheck(moveType, from, to, piece)) {
-  //     switch (moveType) {
-  //       case MoveType.REGULAR:
-  //       case MoveType.CAPTURE:
-  //         this.makeRegularOrCaptureMove(from, to, piece);
-  //         break;
-  //       case MoveType.EN_PASSANT:
-  //         this.makeEnPassantMove(from, to, piece);
-  //         break;
-  //       case MoveType.CASTLING:
-  //         this.makeCastlingMove(from, to, piece);
-  //         break;
-  //     }
-  //     this.boardService.addMoveToHistory(cloneDeep({from, to, piece}));
-  //     this.checkPawnPromotion(to, piece);
-  //     this.toggleColor();
-  //     this.updateGameState();
-  //   }
-  // }
-
-  // private willNotKingInCheck(moveType: MoveType, from: Coordinate, to: Coordinate, piece: Piece) {
-  //   const copyBoard = cloneDeep(this.board);
-  //   switch (moveType) {
-  //     case MoveType.REGULAR:
-  //     case MoveType.CAPTURE:
-  //       this.makeRegularOrCaptureMove(from, to, piece, copyBoard);
-  //       break;
-  //     case MoveType.EN_PASSANT:
-  //       this.makeEnPassantMove(from, to, piece, copyBoard);
-  //       break;
-  //     case MoveType.CASTLING:
-  //       this.makeCastlingMove(from, to, piece, copyBoard);
-  //       break;
-  //   }
-  //   return !this.isKingInCheck(copyBoard);
-  // }
-
-  // private isKingInCheck(board: Field[][] = this.board, color: PieceColor = this.currentColor): boolean {
-  //   const oppositeColor = this.getOppositeColor(color);
-  //   const piecesCoordinates: Coordinate[] = this.getPiecesCoordinates(board, oppositeColor)!;
-  //   const kingCoordinate: Coordinate = this.getKingCoordinate(board, color)!;
-  //
-  //   let result = false;
-  //   piecesCoordinates.forEach(coordinate => {
-  //     const move: ValidatedMove = this.getValidatedMove(coordinate, kingCoordinate, oppositeColor, board);
-  //     const piece: Piece = board[coordinate.row][coordinate.column].piece!;
-  //     const moveType: MoveType = this.contextStrategy.validateMove(piece.type, move);
-  //     if (moveType !== MoveType.INVALID) {
-  //       result = true;
-  //     }
-  //   });
-  //   return result;
-  // }
+    let result = false;
+    piecesCoordinates.forEach(coordinate => {
+      const target: CheckTarget = {from: coordinate, color: oppositeColor, board};
+      const piece: Piece = board[coordinate.row][coordinate.column].piece!;
+      const mapTarget = this.contextStrategy.validateMove(piece.type, target);
+      if (mapTarget.has(JSON.stringify(kingCoordinate))) {
+        result = true;
+      }
+    });
+    return result;
+  }
 
   private getKingCoordinate(copyBoard: Field[][], color: PieceColor): Coordinate | undefined {
     for (let row = 0; row < 8; row++) {
@@ -207,10 +182,6 @@ export class BoardComponent {
       }
     }
     return piecesCoordinates;
-  }
-
-  private getValidatedMove(from: Coordinate, to: Coordinate, color: PieceColor = this.currentColor, board: Field[][] = this.board) {
-    return {from, to, color, board: cloneDeep(board)};
   }
 
   private makeRegularOrCaptureMove(from: Coordinate, to: Coordinate, piece: Piece, board: Field[][] = this.board) {
@@ -294,43 +265,42 @@ export class BoardComponent {
     }
   }
 
-  // updateGameState() {
-  //   const isKingInCheck = this.isKingInCheck();
-  //   const isAnyMoveValid = this.isAnyMoveValid();
-  //
-  //   if (isKingInCheck) {
-  //     if (isAnyMoveValid) {
-  //       console.log(GameState.CHECK);
-  //     } else {
-  //       console.log(GameState.CHECK_MATE);
-  //     }
-  //   } else {
-  //     if (isAnyMoveValid) {
-  //       console.log(GameState.REGULAR);
-  //     } else {
-  //       console.log(GameState.STALE_MATE);
-  //     }
-  //   }
-  // }
-  //
-  // isAnyMoveValid(copyBoard: Field[][] = this.board, color: PieceColor = this.currentColor) {
-  //   const piecesCoordinates: Coordinate[] = this.getPiecesCoordinates(copyBoard, color)!;
-  //
-  //   let result = false;
-  //   piecesCoordinates.forEach(coordinate => {
-  //
-  //     for (let row = 0; row < 8; row++) {
-  //       for (let column = 0; column < 8; column++) {
-  //         const move: ValidatedMove = this.getValidatedMove(coordinate, {row, column}, color, copyBoard);
-  //         const piece: Piece = copyBoard[coordinate.row][coordinate.column].piece!;
-  //
-  //         const moveType: MoveType = this.contextStrategy.validateMove(piece.type, move);
-  //         if (moveType !== MoveType.INVALID && this.willNotKingInCheck(moveType, move.from, move.to, piece)) {
-  //           result = true;
-  //         }
-  //       }
-  //     }
-  //   });
-  //   return result;
-  // }
+  updateGameState() {
+    const isKingInCheck = this.isKingInCheck();
+    const isAnyMoveValid = this.isAnyMoveValid();
+
+    if (isKingInCheck) {
+      if (isAnyMoveValid) {
+        console.log(GameState.CHECK);
+      } else {
+        console.log(GameState.CHECK_MATE);
+      }
+    } else {
+      if (isAnyMoveValid) {
+        console.log(GameState.REGULAR);
+      } else {
+        console.log(GameState.STALE_MATE);
+      }
+    }
+  }
+
+  isAnyMoveValid(copyBoard: Field[][] = this.board, color: PieceColor = this.currentColor) {
+    const piecesCoordinates: Coordinate[] = this.getPiecesCoordinates(copyBoard, color)!;
+
+    let result = false;
+    for (let coordinate of piecesCoordinates) {
+
+      const target: CheckTarget = {from: coordinate, color, board: copyBoard};
+      const piece: Piece = copyBoard[coordinate.row][coordinate.column].piece!;
+      const mapTarget = this.contextStrategy.validateMove(piece.type, target);
+
+      for (let [key, value] of mapTarget) {
+        const correctKey: Coordinate = JSON.parse(key);
+        if (this.willNotKingInCheck(value, target.from, correctKey, piece)) {
+          result = true;
+        }
+      }
+    }
+    return result;
+  }
 }

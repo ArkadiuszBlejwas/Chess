@@ -79,6 +79,10 @@ img, .cell, .dot {
   cursor: grab;
 }
 
+.piece:active {
+  cursor: grabbing;
+}
+
 .cdk-drop-list-dragging .piece.cdk-drag-placeholder {
   display: none;
   //opacity: 0;

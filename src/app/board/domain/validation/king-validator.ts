@@ -8,6 +8,8 @@ import {inject} from "@angular/core";
 import {BoardService} from "../../services/board.service";
 import {PieceType} from "../model/piece-type";
 import {Piece} from "../model/piece";
+import {PieceColor} from "../model/piece-color";
+import {CheckTarget} from "../model/check-target";
 
 export class KingValidator extends ValidationHelper implements ValidationStrategy {
 
@@ -21,66 +23,126 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
       .subscribe(history => this.history = history);
   }
 
-  checkDestination(from: Coordinate, board: Field[][]): Map<Coordinate, MoveType> {
-    const toMap: Map<Coordinate, MoveType> = new Map<Coordinate, MoveType>;
+  checkDestination(from: Coordinate, board: Field[][]): Map<string, MoveType> {
+    const toMap: Map<string, MoveType> = new Map<string, MoveType>;
+    const color: PieceColor = this.getOpponentColor(from, board)!;
+    const target: CheckTarget = {from, board, color};
+
+    this.checkRegularAndCapture(target, toMap);
+    this.checkShortCastling(target, toMap);
+    this.checkLongCastling(target, toMap);
 
     return toMap;
   }
 
-  // validateMove(from: Coordinate, to: Coordinate, board: Field[][]): MoveType {
-  //   if (this.isShortMove(from, to)) {
-  //     if (this.isRegularMove(to, board)) {
-  //       return MoveType.REGULAR;
-  //     }
-  //     if (this.isCaptureMove(from, to, board)) {
-  //       return MoveType.CAPTURE;
-  //     }
-  //   }
-  //   if (this.isCastling(from, to, board)) {
-  //     return MoveType.CASTLING;
-  //   }
-  //   return MoveType.INVALID;
-  // }
-  //
-  // private isShortMove(from: Coordinate, to: Coordinate) {
-  //   return Math.abs(this.getDistanceRow(from, to)) <= 1 && Math.abs(this.getDistanceColumn(from, to)) <= 1;
-  // }
-  //
-  // private isCastling(from: Coordinate, to: Coordinate, board: Field[][]) {
-  //   return this.isHorizontalMove(from, to, board)
-  //     && this.areKingWithoutMove(from, board)
-  //     && this.areRookWithoutMove(from, to, board);
-  // }
-  //
-  // private areKingWithoutMove(from: Coordinate, board: Field[][]) {
-  //   const king: Piece | undefined = this.getPiece(from, board);
-  //   return !this.history.find(move => this.isSamePiece(move, king!));
-  // }
-  //
-  // private areRookWithoutMove(from: Coordinate, to: Coordinate, board: Field[][]) {
-  //   const kingColor = this.getPieceColor(from, board);
-  //   const distanceColumn = this.getDistanceColumn(from, to);
-  //
-  //   if (distanceColumn === -2 || distanceColumn === 2) {
-  //     const column: number = to.column - this.getHorizontalDirection(distanceColumn);
-  //     const coordinate: Coordinate = {row: to.row, column: column};
-  //     const piece: Piece | undefined = this.getPiece(coordinate, board)
-  //
-  //     return piece?.type === PieceType.ROOK && piece.color === kingColor
-  //       && !this.history.find(move => this.isSamePiece(move, piece!) && this.isSameCoordinate(move, coordinate));
-  //   }
-  //   return false;
-  // }
-  //
-  // private getHorizontalDirection(distanceColumn: number) {
-  //   return distanceColumn > 0 ? 2 : -1;
-  // }
-  //
-  // private isSamePiece(move: Move, piece: Piece) {
-  //   return move.piece.color === piece?.color && move.piece.type === piece?.type;
-  // }
-  //
-  // private isSameCoordinate(move: Move, coordinate: Coordinate) {
-  //   return move.from.row === coordinate.row && move.from.column === coordinate.column;
-  // }
+  private checkRegularAndCapture(target: CheckTarget, toMap: Map<string, MoveType>) {
+    const {from, board, color} = target;
+
+    const topCoordinate: Coordinate = {row: from.row - 1, column: from.column};
+    const bottomCoordinate: Coordinate = {row: from.row + 1, column: from.column};
+    const leftCoordinate: Coordinate = {row: from.row, column: from.column - 1};
+    const rightCoordinate: Coordinate = {row: from.row, column: from.column + 1};
+    const leftTopCoordinate: Coordinate = {row: from.row - 1, column: from.column - 1};
+    const rightTopCoordinate: Coordinate = {row: from.row - 1, column: from.column + 1};
+    const leftBottomCoordinate: Coordinate = {row: from.row + 1, column: from.column - 1};
+    const rightBottomCoordinate: Coordinate = {row: from.row + 1, column: from.column + 1};
+
+    const coordinates = [
+      leftTopCoordinate,
+      rightTopCoordinate,
+      leftBottomCoordinate,
+      rightBottomCoordinate,
+      leftCoordinate,
+      rightCoordinate,
+      topCoordinate,
+      bottomCoordinate
+    ];
+
+    coordinates.forEach(coordinate => this.validateCoordinate(coordinate, board, color!, toMap));
+  }
+
+  private validateCoordinate(leftTopCoordinate: Coordinate, board: Field[][], color: PieceColor, toMap: Map<string, MoveType>) {
+    if (this.isEmptyField2(leftTopCoordinate, board)) {
+      toMap.set(JSON.stringify(leftTopCoordinate), MoveType.REGULAR);
+    }
+    if (color === this.getPieceColor(leftTopCoordinate, board)) {
+      toMap.set(JSON.stringify(leftTopCoordinate), MoveType.CAPTURE);
+    }
+  }
+
+  private checkShortCastling(target: CheckTarget, toMap: Map<string, MoveType>) {
+    const {from, board} = target;
+    const to = {row: from.row, column: from.column + 2};
+    const areEmptyFields = this.getAreEmptyFieldsForShortCastling(from, board);
+
+    if (areEmptyFields && this.isKingWithoutMove(from, board) && this.isRookWithoutMove(from, to, board)) {
+      toMap.set(JSON.stringify(to), MoveType.CASTLING);
+    }
+  }
+
+  private checkLongCastling(target: CheckTarget, toMap: Map<string, MoveType>) {
+    const {from, board} = target;
+    const to = {row: from.row, column: from.column - 2};
+    const areEmptyFields = this.getAreEmptyFieldsForLongCastling(from, board);
+
+    if (areEmptyFields && this.isKingWithoutMove(from, board) && this.isRookWithoutMove(from, to, board)) {
+      toMap.set(JSON.stringify(to), MoveType.CASTLING);
+    }
+  }
+
+  private getAreEmptyFieldsForShortCastling(from: Coordinate, board: Field[][]) {
+    return this.isEmptyField(from.row, from.column + 1, board)
+      && this.isEmptyField(from.row, from.column + 2, board);
+  }
+
+  private getAreEmptyFieldsForLongCastling(from: Coordinate, board: Field[][]) {
+    return this.isEmptyField(from.row, from.column - 1, board)
+      && this.isEmptyField(from.row, from.column - 2, board)
+      && this.isEmptyField(from.row, from.column - 3, board);
+  }
+
+  private isKingWithoutMove(from: Coordinate, board: Field[][]) {
+    const king: Piece | undefined = this.getPiece(from, board);
+    return this.hasKingNoHistory(king);
+  }
+
+  private isRookWithoutMove(from: Coordinate, to: Coordinate, board: Field[][]) {
+    const kingColor = this.getPieceColor(from, board);
+
+    const column = this.getRookColumn(to);
+    const coordinate: Coordinate = {row: to.row, column: column};
+    const piece: Piece | undefined = this.getPiece(coordinate, board)
+
+    return this.isRook(piece)
+      && this.hasRookProperColor(piece, kingColor)
+      && this.hasRookNoHistory(piece, coordinate);
+  }
+
+  private hasKingNoHistory(king: Piece | undefined) {
+    return !this.history.find(move => this.isSamePiece(move, king!));
+  }
+
+  private hasRookNoHistory(piece: Piece | undefined, coordinate: Coordinate) {
+    return !this.history.find(move => this.isSamePiece(move, piece!) && this.isSameCoordinate(move, coordinate));
+  }
+
+  private hasRookProperColor(piece: Piece | undefined, kingColor: PieceColor | undefined) {
+    return piece?.color === kingColor;
+  }
+
+  private isRook(piece: Piece | undefined) {
+    return piece?.type === PieceType.ROOK;
+  }
+
+  private getRookColumn(to: Coordinate) {
+    return to.column === 2 ? 0 : 7;
+  }
+
+  private isSamePiece(move: Move, piece: Piece) {
+    return move.piece.color === piece?.color && move.piece.type === piece?.type;
+  }
+
+  private isSameCoordinate(move: Move, coordinate: Coordinate) {
+    return move.from.row === coordinate.row && move.from.column === coordinate.column;
+  }
 }

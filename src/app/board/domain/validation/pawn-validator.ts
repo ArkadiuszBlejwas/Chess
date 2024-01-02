@@ -22,8 +22,8 @@ export class PawnValidator extends ValidationHelper implements ValidationStrateg
       .subscribe(lastMove => this.lastMove = lastMove);
   }
 
-  checkDestination(from: Coordinate, board: Field[][]): Map<Coordinate, MoveType> {
-    const toMap: Map<Coordinate, MoveType> = new Map<Coordinate, MoveType>;
+  checkDestination(from: Coordinate, board: Field[][]): Map<string, MoveType> {
+    const toMap: Map<string, MoveType> = new Map<string, MoveType>;
     const color: PieceColor = this.getPieceColor(from, board)!;
     const direction: number = this.getDirection(color);
     const target: CheckTarget = { from, color, board, direction };
@@ -36,21 +36,22 @@ export class PawnValidator extends ValidationHelper implements ValidationStrateg
     return toMap;
   }
 
-  private checkShortMove(target: CheckTarget, map: Map<Coordinate, MoveType>) {
+  private checkShortMove(target: CheckTarget, map: Map<string, MoveType>) {
     const {from, color, board, direction} = target;
     const to = this.getToShortMove(from, direction!);
 
     if (this.isEmptyField2(to, board)) {
-      map.set(to, MoveType.REGULAR);
+      map.set(JSON.stringify(to), MoveType.REGULAR);
     }
   }
 
-  private checkLongMove(target: CheckTarget, map: Map<Coordinate, MoveType>) {
+  private checkLongMove(target: CheckTarget, map: Map<string, MoveType>) {
     const {from, color, board, direction} = target;
+    const prev = this.getToShortMove(from, direction!);
     const to = this.getToLongMove(from, direction!);
 
-    if (this.isEmptyField2(to, board) && from.row === this.getStartRow(color!)) {
-      map.set(to, MoveType.REGULAR);
+    if (this.isEmptyField2(prev, board) && this.isEmptyField2(to, board) && from.row === this.getStartRow(color!)) {
+      map.set(JSON.stringify(to), MoveType.REGULAR);
     }
   }
 
@@ -70,16 +71,16 @@ export class PawnValidator extends ValidationHelper implements ValidationStrateg
     return color === PieceColor.WHITE ? 6 : 1;
   }
 
-  private checkCapture(target: CheckTarget, map: Map<Coordinate, MoveType>): Map<Coordinate, MoveType> {
+  private checkCapture(target: CheckTarget, map: Map<string, MoveType>): Map<string, MoveType> {
     const {from, color, board, direction} = target;
     const toLeftDiagonal = this.getToLeftDiagonal(from, direction!)
     const toRightDiagonal = this.getToRightDiagonal(from, direction!)
 
     if (this.isOpponentPiece(toLeftDiagonal, board, color!)) {
-      map.set(toLeftDiagonal, MoveType.CAPTURE)
+      map.set(JSON.stringify(toLeftDiagonal), MoveType.CAPTURE)
     }
     if (this.isOpponentPiece(toRightDiagonal, board, color!)) {
-      map.set(toRightDiagonal, MoveType.CAPTURE)
+      map.set(JSON.stringify(toRightDiagonal), MoveType.CAPTURE)
     }
     return map;
   }
@@ -96,17 +97,17 @@ export class PawnValidator extends ValidationHelper implements ValidationStrateg
     return {row: from.row + direction, column: from.column - direction};
   }
 
-  private checkEnPassant(target: CheckTarget, map: Map<Coordinate, MoveType>): Map<Coordinate, MoveType> {
+  private checkEnPassant(target: CheckTarget, map: Map<string, MoveType>): Map<string, MoveType> {
     const {from, direction} = target;
     if (!!this.lastMove) {
       const toLeftDiagonal = this.getToLeftDiagonal(from, direction!)
       const toRightDiagonal = this.getToRightDiagonal(from, direction!)
 
       if (this.isEnPassant(target, toLeftDiagonal, this.lastMove)) {
-        map.set(toLeftDiagonal, MoveType.EN_PASSANT);
+        map.set(JSON.stringify(toLeftDiagonal), MoveType.EN_PASSANT);
       }
       if (this.isEnPassant(target, toRightDiagonal, this.lastMove)) {
-        map.set(toRightDiagonal, MoveType.EN_PASSANT);
+        map.set(JSON.stringify(toRightDiagonal), MoveType.EN_PASSANT);
       }
     }
     return map;

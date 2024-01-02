@@ -6,5 +6,5 @@ export interface ValidationStrategy {
 
   // validateMove(from: Coordinate, to: Coordinate, board: Field[][]): MoveType;
 
-  checkDestination(from: Coordinate, board: Field[][]): Map<Coordinate, MoveType>;
+  checkDestination(from: Coordinate, board: Field[][]): Map<string, MoveType>;
 }
