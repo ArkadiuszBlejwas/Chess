@@ -133,11 +133,16 @@ export class BoardComponent implements OnInit, OnDestroy {
         }
         this.addMoveToHistory({from, to, piece});
         this.checkPawnPromotion(to, piece);
+        this.changeBoard(this.board);
         this.toggleCurrentColor();
         this.updateGameState();
       }
     }
     this.clearSelects();
+  }
+
+  private changeBoard(board: Field[][]) {
+    this.boardService.changeBoard(board);
   }
 
   private addMoveToHistory(move: Move) {
