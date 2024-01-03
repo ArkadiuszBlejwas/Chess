@@ -1,1 +1,8 @@
-<p>piece works!</p>
+<img *ngIf="displayPiece(row, column)"
+     cdkDrag
+     alt="figure"
+     class="piece"
+     (mousedown)="selectPiece(row, column, $event)"
+     (cdkDragStarted)="dragPiece(row, column)"
+     [cdkDragData]="{row, column}"
+     [src]="imageSrc(row, column)"/>

@@ -70,22 +70,6 @@ img, .cell, .dot {
   justify-content: center;
 }
 
-.piece {
-  cursor: grab;
-}
-
-.piece:active {
-  cursor: grabbing;
-}
-
-.cdk-drop-list-dragging .piece.cdk-drag-placeholder {
-  display: none;
-}
-
-.piece:not(.cdk-drag-preview) {
-  transform: none !important;
-}
-
 .selected, .target {
   background-color: rgba(0, 90, 0, .35);
 }

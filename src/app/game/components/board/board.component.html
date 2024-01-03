@@ -11,17 +11,15 @@
          (mousedown)="selectTarget(row, column)"
          [class.color]="column % 2 !== row % 2">
       <div class="dot"
-           [class.selected]="isSelected(row, column)"
            [class.target]="isTarget(row, column)"
+           [class.selected]="isSelected(row, column)"
            [class.capture]="isCapture(row, column)">
-        <img *ngIf="displayPiece(row, column)"
-             cdkDrag
-             alt="figure"
-             class="piece"
-             (mousedown)="selectPiece(row, column, $event)"
-             (cdkDragStarted)="dragPiece(row, column)"
-             [cdkDragData]="{row, column}"
-             [src]="imageSrc(row, column)"/>
+        <piece
+          [row]="row"
+          [column]="column"
+          (targetMapChange)="setTargetMap($event)"
+          (selectedPieceChange)="setSelectedPiece($event)"
+        ></piece>
       </div>
     </div>
   </div>
