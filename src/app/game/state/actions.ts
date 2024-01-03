@@ -8,6 +8,10 @@ export const initBoardSuccessfully = createAction('Init board successfully', pro
   board: Field[][];
 }>());
 
+export const changeBoard = createAction('Change board', props<{
+  board: Field[][];
+}>());
+
 export const addMoveToHistory = createAction('Add move to history', props<{
   move: Move;
 }>());

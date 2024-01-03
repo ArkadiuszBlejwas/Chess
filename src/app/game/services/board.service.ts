@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {select, Store} from "@ngrx/store";
 import {ChessState} from "../state/state";
-import {addMoveToHistory, initBoard, toggleCurrentColor} from "../state/actions";
+import {addMoveToHistory, changeBoard, initBoard, toggleCurrentColor} from "../state/actions";
 import {Move} from "../domain/model/move";
 import {selectChessState} from "../state/selectors";
 import {distinctUntilChanged, map, Observable} from "rxjs";
@@ -21,6 +21,10 @@ export class BoardService {
 
   initBoard() {
     this.store$.dispatch(initBoard());
+  }
+
+  changeBoard(board: Field[][]) {
+    this.store$.dispatch(changeBoard({board}));
   }
 
   toggleCurrentColor() {
