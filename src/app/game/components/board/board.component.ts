@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, inject} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {PieceType} from "../../domain/model/piece-type";
 import {CdkDragDrop, DragDropModule} from "@angular/cdk/drag-drop";
@@ -14,7 +14,8 @@ import {MatDialog, MatDialogRef} from "@angular/material/dialog";
 import {PromotionComponent} from "../promotion/promotion.component";
 import {CheckTarget} from "../../domain/model/check-target";
 import {GameState} from "../../state/state";
-import {ValidationStrategy} from "../../domain/validation/validation-strategy";
+import {Subject, takeUntil} from "rxjs";
+import {Move} from "../../domain/model/move";
 
 @Component({
   selector: 'board',
@@ -27,21 +28,39 @@ import {ValidationStrategy} from "../../domain/validation/validation-strategy";
   styleUrl: './board.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BoardComponent {
+export class BoardComponent implements OnInit, OnDestroy {
 
-  currentColor = PieceColor.WHITE;
+  private readonly destroy$ = new Subject<void>();
 
-  contextStrategy = new ContextStrategy();
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly boardService = inject(BoardService);
+  private readonly matDialog = inject(MatDialog);
 
-  changeDetector = inject(ChangeDetectorRef);
-  boardService = inject(BoardService);
-  matDialog = inject(MatDialog);
+  board!: Field[][];
 
-  board = this.boardService.createBoard();
+  currentColor!: PieceColor;
 
   selectedPiece?: Coordinate;
 
-  targetMap: Map<string, MoveType> = new Map<string, MoveType>;
+  targetMap = new Map<string, MoveType>;
+
+  contextStrategy = new ContextStrategy();
+
+  ngOnInit(): void {
+    this.boardService.initBoard();
+    this.boardService.getBoard()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(board => {
+        this.board = cloneDeep(board);
+        this.changeDetector.markForCheck();
+      });
+    this.boardService.getCurrentColor()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(color => {
+        this.currentColor = color;
+        this.changeDetector.markForCheck();
+      });
+  }
 
   selectPiece(row: number, column: number, event: MouseEvent) {
     if (this.board[row][column].piece?.color === this.currentColor) {
@@ -53,7 +72,7 @@ export class BoardComponent {
   selectTarget(row: number, column: number) {
     if (!!this.selectedPiece) {
       const to = {row, column};
-      this.validate(this.selectedPiece, to)
+      this.validateMove(this.selectedPiece, to);
     }
   }
 
@@ -75,7 +94,7 @@ export class BoardComponent {
   }
 
   imageSrc(row: number, column: number): string {
-    const piece = this.board[row][column].piece!;
+    const piece: Piece = this.board[row][column].piece!;
     return this.getPieceImageSrc(piece);
   }
 
@@ -91,15 +110,15 @@ export class BoardComponent {
   dropPiece(event: CdkDragDrop<any, Coordinate, Coordinate>) {
     const from: Coordinate = event.item.data;
     const to: Coordinate = event.container.data;
-    this.validate(from, to);
+    this.validateMove(from, to);
   }
 
-  private validate(from: Coordinate, to: Coordinate) {
+  private validateMove(from: Coordinate, to: Coordinate) {
     if (this.isTarget(to.row, to.column)) {
-      const moveType = this.targetMap.get(JSON.stringify(to));
+      const moveType: MoveType = this.targetMap.get(JSON.stringify(to))!;
       const piece: Piece = this.board[from.row][from.column].piece!;
 
-      if (this.willNotKingInCheck(moveType!, from, to, piece)) {
+      if (this.willNotKingInCheck(moveType, from, to, piece)) {
         switch (moveType) {
           case MoveType.REGULAR:
           case MoveType.CAPTURE:
@@ -112,13 +131,21 @@ export class BoardComponent {
             this.makeCastlingMove(from, to, piece);
             break;
         }
-        this.boardService.addMoveToHistory(cloneDeep({from, to, piece}));
+        this.addMoveToHistory({from, to, piece});
         this.checkPawnPromotion(to, piece);
-        this.toggleColor();
+        this.toggleCurrentColor();
         this.updateGameState();
       }
     }
     this.clearSelects();
+  }
+
+  private addMoveToHistory(move: Move) {
+    this.boardService.addMoveToHistory(cloneDeep(move));
+  }
+
+  private toggleCurrentColor() {
+    this.boardService.toggleCurrentColor();
   }
 
   private clearSelects() {
@@ -202,6 +229,9 @@ export class BoardComponent {
         const piece = copyBoard[row][column].piece;
         if (piece?.color === color) {
           piecesCoordinates.push({row, column});
+          if (piecesCoordinates.length === 16) {
+            return piecesCoordinates;
+          }
         }
       }
     }
@@ -244,19 +274,15 @@ export class BoardComponent {
     }
   }
 
-  private toggleColor() {
-    this.currentColor = this.getOppositeColor(this.currentColor);
-  }
-
   private getOppositeColor(color: PieceColor) {
     return color === PieceColor.WHITE ? PieceColor.BLACK : PieceColor.WHITE;
   }
 
-  getPieceImageSrc(piece: Piece): string {
+  private getPieceImageSrc(piece: Piece): string {
     return 'assets/pieces/cardinal/' + this.getPieceFileImage(piece);
   }
 
-  getPieceFileImage(piece: Piece): string {
+  private getPieceFileImage(piece: Piece): string {
     return this.getColorLetter(piece.color) + this.getPieceTypeSVG(piece.type);
   }
 
@@ -326,5 +352,10 @@ export class BoardComponent {
       }
     }
     return result;
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

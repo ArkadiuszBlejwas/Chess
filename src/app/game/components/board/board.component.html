@@ -2,7 +2,7 @@
 <ng-template [ngTemplateOutlet]="xAxis"></ng-template>
 <div></div>
 <ng-template [ngTemplateOutlet]="yAxis"></ng-template>
-<div class="board" cdkDropListGroup>
+<div class="board" cdkDropListGroup *ngIf="!!board">
   <div class="row" *ngFor="let row of [0, 1, 2, 3, 4, 5, 6, 7]">
     <div class="cell" *ngFor="let column of [0, 1, 2, 3, 4, 5, 6, 7]"
          cdkDropList

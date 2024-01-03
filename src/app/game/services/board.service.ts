@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {select, Store} from "@ngrx/store";
 import {ChessState} from "../state/state";
-import {addMoveToHistory} from "../state/actions";
+import {addMoveToHistory, initBoard, toggleCurrentColor} from "../state/actions";
 import {Move} from "../domain/model/move";
 import {selectChessState} from "../state/selectors";
 import {distinctUntilChanged, map, Observable} from "rxjs";
@@ -17,6 +17,28 @@ import {PieceType} from "../domain/model/piece-type";
 export class BoardService {
 
   constructor(private readonly store$: Store<ChessState>) {
+  }
+
+  initBoard() {
+    this.store$.dispatch(initBoard());
+  }
+
+  toggleCurrentColor() {
+    this.store$.dispatch(toggleCurrentColor());
+  }
+
+  getCurrentColor(): Observable<PieceColor> {
+    return this.store$.pipe(
+      select(selectChessState),
+      map(state => state.currentColor),
+      distinctUntilChanged(isEqual));
+  }
+
+  getBoard(): Observable<Field[][]> {
+    return this.store$.pipe(
+      select(selectChessState),
+      map(state => state.board),
+      distinctUntilChanged(isEqual));
   }
 
   addMoveToHistory(move: Move) {

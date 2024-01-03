@@ -1,10 +1,12 @@
 import {Move} from "../domain/model/move";
-import {Piece} from "../domain/model/piece";
+import {Field} from "../domain/model/field";
+import {PieceColor} from "../domain/model/piece-color";
 
 export interface ChessState {
+  board: Field[][];
   gameState: GameState;
   historyMoves: Move[];
-  capturedPieces: Piece[];
+  currentColor: PieceColor;
 }
 
 export enum GameState {
