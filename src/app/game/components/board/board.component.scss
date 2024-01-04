@@ -35,13 +35,13 @@
   font-size: 12px;
 }
 
-.cell, .dot {
+.field, .highlight {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-img, .cell, .dot {
+.field, .highlight {
   width: 60px;
   height: 60px;
 }
@@ -72,6 +72,10 @@ img, .cell, .dot {
 
 .selected, .target {
   background-color: rgba(0, 90, 0, .35);
+}
+
+.field {
+  transition: all ease-in .5s;
 }
 
 .target {

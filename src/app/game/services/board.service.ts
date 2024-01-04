@@ -1,7 +1,14 @@
 import {Injectable} from '@angular/core';
 import {select, Store} from "@ngrx/store";
-import {ChessState} from "../state/state";
-import {addMoveToHistory, changeBoard, initBoard, toggleCurrentColor} from "../state/actions";
+import {ChessState, GameState} from "../state/state";
+import {
+  addMoveToHistory,
+  changeBoard,
+  changeGameState,
+  changePieceType,
+  initBoard,
+  toggleCurrentColor
+} from "../state/actions";
 import {Move} from "../domain/model/move";
 import {selectChessState} from "../state/selectors";
 import {distinctUntilChanged, map, Observable} from "rxjs";
@@ -10,14 +17,14 @@ import {Field} from "../domain/model/field";
 import {Piece} from "../domain/model/piece";
 import {PieceColor} from "../domain/model/piece-color";
 import {PieceType} from "../domain/model/piece-type";
+import {Coordinate} from "../domain/model/coordinate";
 
 @Injectable({
   providedIn: 'root'
 })
 export class BoardService {
 
-  constructor(private readonly store$: Store<ChessState>) {
-  }
+  constructor(private readonly store$: Store<ChessState>) {}
 
   initBoard() {
     this.store$.dispatch(initBoard());
@@ -29,6 +36,14 @@ export class BoardService {
 
   toggleCurrentColor() {
     this.store$.dispatch(toggleCurrentColor());
+  }
+
+  changePieceType(coordinate: Coordinate, pieceType: PieceType) {
+    this.store$.dispatch(changePieceType({coordinate, pieceType}));
+  }
+
+  changeGameState(gameState: GameState) {
+    this.store$.dispatch(changeGameState({gameState}));
   }
 
   getCurrentColor(): Observable<PieceColor> {

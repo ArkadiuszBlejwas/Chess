@@ -20,7 +20,6 @@ import {Coordinate} from "../../domain/model/coordinate";
 import {MoveType} from "../../domain/model/move-type";
 import {ContextStrategy} from "../../domain/validation/context-strategy";
 import {Subject, takeUntil} from "rxjs";
-import {cloneDeep} from "lodash-es";
 import {BoardService} from "../../services/board.service";
 
 @Component({
@@ -63,7 +62,7 @@ export class PieceComponent implements OnInit, OnDestroy {
     this.boardService.getBoard()
       .pipe(takeUntil(this.destroy$))
       .subscribe(board => {
-        this.board = cloneDeep(board);
+        this.board = board;
         this.changeDetector.markForCheck();
       });
     this.boardService.getCurrentColor()

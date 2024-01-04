@@ -1,6 +1,13 @@
 import {ChessState, GameState} from "./state";
 import {createReducer, on} from "@ngrx/store";
-import {addMoveToHistory, changeBoard, initBoardSuccessfully, resetChessState, toggleCurrentColor} from "./actions";
+import {
+  addMoveToHistory,
+  changeBoard,
+  changePieceType,
+  initBoardSuccessfully,
+  resetChessState,
+  toggleCurrentColor
+} from "./actions";
 import {cloneDeep} from "lodash-es";
 import {PieceColor} from "../domain/model/piece-color";
 
@@ -34,6 +41,12 @@ export const chessReducer = createReducer(initialState,
       } else {
         newState.currentColor = PieceColor.WHITE;
       }
+      return newState;
+    }),
+    on(changePieceType, (state: ChessState, {coordinate, pieceType}) => {
+      const newState: ChessState = cloneDeep(state);
+      const piece = newState.board[coordinate.row][coordinate.column].piece;
+      !!piece && (piece.type = pieceType);
       return newState;
     }),
     on(resetChessState, (state: ChessState) => {

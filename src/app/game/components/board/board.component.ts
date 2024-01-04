@@ -265,10 +265,13 @@ export class BoardComponent implements OnInit, OnDestroy {
       const dialogRef: MatDialogRef<PromotionComponent> = this.matDialog.open(PromotionComponent);
 
       dialogRef.afterClosed().subscribe(newPieceType => {
-        piece.type = newPieceType;
+        this.changePieceType(to, newPieceType);
         this.changeDetector.markForCheck();
       });
     }
+  }
+  private changePieceType(coordinate: Coordinate, pieceType: PieceType) {
+    this.boardService.changePieceType(coordinate, pieceType);
   }
 
   private getOppositeColor(color: PieceColor) {

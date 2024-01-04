@@ -2,7 +2,8 @@
      cdkDrag
      alt="figure"
      class="piece"
-     (mousedown)="selectPiece(row, column, $event)"
-     (cdkDragStarted)="dragPiece(row, column)"
+     [src]="imageSrc(row, column)"
      [cdkDragData]="{row, column}"
-     [src]="imageSrc(row, column)"/>
+     (cdkDragStarted)="dragPiece(row, column)"
+     (mousedown)="selectPiece(row, column, $event)"
+/>
