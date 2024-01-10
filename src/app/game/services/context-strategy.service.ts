@@ -9,14 +9,14 @@ import {BishopValidator} from "./validation/bishop-validator";
 import {MoveType} from "../model/move-type";
 import {CheckDestination} from "../model/check-destination";
 import {Move} from "../model/move";
-import {Injectable} from "@angular/core";
+import {Injectable, Injector} from "@angular/core";
 
 @Injectable({
   providedIn: 'root'
 })
 export class ContextStrategyService {
 
-  private strategyMap!: Map<PieceType, ValidationStrategy>;
+  private readonly strategyMap!: Map<PieceType, ValidationStrategy>;
 
   constructor() {
     this.strategyMap = new Map<PieceType, ValidationStrategy>([
@@ -29,10 +29,10 @@ export class ContextStrategyService {
     ]);
   }
 
-  validateDestination(checkDestination: CheckDestination, moveHistory: Move[]): Map<string, MoveType> {
+  validateDestination(checkDestination: CheckDestination, moveHistory: Move[], checkCastling = true): Map<string, MoveType> {
     const { from, board } = checkDestination;
     const pieceType: PieceType = board[from.row][from.column].piece!.type;
-    return this.getValidator(pieceType).checkDestination(from, board, moveHistory);
+    return this.getValidator(pieceType).checkDestination(from, board, moveHistory, checkCastling);
   }
 
   private getValidator(pieceType: PieceType): ValidationStrategy {

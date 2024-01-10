@@ -5,5 +5,5 @@ import {Move} from "../../model/move";
 
 export interface ValidationStrategy {
 
-  checkDestination(from: Coordinate, board: Field[][], moveHistory?: Move[]): Map<string, MoveType>;
+  checkDestination(from: Coordinate, board: Field[][], moveHistory?: Move[], checkCastling?: boolean): Map<string, MoveType>;
 }

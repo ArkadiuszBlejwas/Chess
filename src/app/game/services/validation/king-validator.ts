@@ -8,17 +8,27 @@ import {PieceType} from "../../model/piece-type";
 import {Piece} from "../../model/piece";
 import {PieceColor} from "../../model/piece-color";
 import {CheckDestination} from "../../model/check-destination";
+import {CheckValidatorService} from "../check-validator.service";
+import {inject} from "@angular/core";
 
 export class KingValidator extends ValidationHelper implements ValidationStrategy {
 
-  checkDestination(from: Coordinate, board: Field[][], moveHistory: Move[]): Map<string, MoveType> {
+  private readonly checkValidatorService = inject(CheckValidatorService);
+
+  checkDestination(from: Coordinate, board: Field[][], moveHistory: Move[], checkCastling: boolean): Map<string, MoveType> {
     const toMap: Map<string, MoveType> = new Map<string, MoveType>;
     const color: PieceColor = this.getOpponentColor(from, board)!;
     const checkDestination: CheckDestination = {from, board, color};
 
     this.checkRegularAndCapture(checkDestination, toMap);
-    this.checkShortCastling(checkDestination, toMap, moveHistory);
-    this.checkLongCastling(checkDestination, toMap, moveHistory);
+
+
+    if (checkCastling) {
+      const opponentColor: PieceColor = this.getPieceColor(from, board)!;
+
+      this.checkShortCastling(checkDestination, opponentColor, toMap, moveHistory);
+      this.checkLongCastling(checkDestination, opponentColor, toMap, moveHistory);
+    }
 
     return toMap;
   }
@@ -58,35 +68,64 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
     }
   }
 
-  private checkShortCastling(checkDestination: CheckDestination, toMap: Map<string, MoveType>, moveHistory: Move[]) {
+  private checkShortCastling(checkDestination: CheckDestination, color: PieceColor, toMap: Map<string, MoveType>, moveHistory: Move[]) {
     const {from, board} = checkDestination;
-    const to = {row: from.row, column: from.column + 2};
-    const areEmptyFields = this.getAreEmptyFieldsForShortCastling(from, board);
+    const to: Coordinate = {row: from.row, column: from.column + 2};
+    const areEmptyFields = this.areEmptyFieldsForShortCastling(from, board);
+    const areFieldsNotInCheck = this.areNotFieldsInCheckForShortCastling(from, color, moveHistory, board);
 
-    if (areEmptyFields && this.isKingWithoutMove(from, board, moveHistory) && this.isRookWithoutMove(from, to, board, moveHistory)) {
+    const isValidMove = areEmptyFields
+      && areFieldsNotInCheck
+      && this.isKingWithoutMove(from, board, moveHistory)
+      && this.isRookWithoutMove(from, to, board, moveHistory);
+
+    if (isValidMove) {
       toMap.set(JSON.stringify(to), MoveType.CASTLING);
     }
   }
 
-  private checkLongCastling(checkDestination: CheckDestination, toMap: Map<string, MoveType>, moveHistory: Move[]) {
+  private checkLongCastling(checkDestination: CheckDestination, color: PieceColor, toMap: Map<string, MoveType>, moveHistory: Move[]) {
     const {from, board} = checkDestination;
-    const to = {row: from.row, column: from.column - 2};
-    const areEmptyFields = this.getAreEmptyFieldsForLongCastling(from, board);
+    const to: Coordinate = {row: from.row, column: from.column - 2};
+    const areEmptyFields = this.areEmptyFieldsForLongCastling(from, board);
+    const areFieldsNotInCheck = this.areNotFieldsInCheckForLongCastling(from, color, moveHistory, board);
 
-    if (areEmptyFields && this.isKingWithoutMove(from, board, moveHistory) && this.isRookWithoutMove(from, to, board, moveHistory)) {
+    const isValidMove = areEmptyFields
+      && areFieldsNotInCheck
+      && this.isKingWithoutMove(from, board, moveHistory)
+      && this.isRookWithoutMove(from, to, board, moveHistory);
+
+    if (isValidMove) {
       toMap.set(JSON.stringify(to), MoveType.CASTLING);
     }
   }
 
-  private getAreEmptyFieldsForShortCastling(from: Coordinate, board: Field[][]) {
-    return this.isEmptyField({ row: from.row, column: from.column + 1}, board)
-      && this.isEmptyField({ row: from.row, column: from.column + 2 }, board);
+  private areEmptyFieldsForShortCastling(from: Coordinate, board: Field[][]) {
+    return this.isEmptyField({row: from.row, column: from.column + 1}, board)
+      && this.isEmptyField({row: from.row, column: from.column + 2}, board);
   }
 
-  private getAreEmptyFieldsForLongCastling(from: Coordinate, board: Field[][]) {
-    return this.isEmptyField({ row: from.row, column: from.column - 1 }, board)
-      && this.isEmptyField({ row: from.row, column: from.column - 2 }, board)
-      && this.isEmptyField({ row: from.row, column: from.column - 3 }, board);
+  private areNotFieldsInCheckForShortCastling(from: Coordinate, color: PieceColor, moveHistory: Move[], board: Field[][]) {
+    const firstEmptyField: Coordinate = {row: from.row, column: from.column + 1};
+    const secondEmptyField: Coordinate = {row: from.row, column: from.column + 2};
+
+    return !(this.checkValidatorService.isKingInCheck(board, color, moveHistory, from)
+      || this.checkValidatorService.isKingInCheck(board, color, moveHistory, firstEmptyField)
+      || this.checkValidatorService.isKingInCheck(board, color, moveHistory, secondEmptyField));
+  }
+
+  private areEmptyFieldsForLongCastling(from: Coordinate, board: Field[][]) {
+    return this.isEmptyField({row: from.row, column: from.column - 1}, board)
+      && this.isEmptyField({row: from.row, column: from.column - 2}, board)
+      && this.isEmptyField({row: from.row, column: from.column - 3}, board);
+  }
+
+  private areNotFieldsInCheckForLongCastling(from: Coordinate, color: PieceColor, moveHistory: Move[], board: Field[][]) {
+    const firstEmptyField: Coordinate = {row: from.row, column: from.column - 1};
+    const secondEmptyField: Coordinate = {row: from.row, column: from.column - 2};
+    return !(this.checkValidatorService.isKingInCheck(board, color, moveHistory, from)
+      || this.checkValidatorService.isKingInCheck(board, color, moveHistory, firstEmptyField)
+      || this.checkValidatorService.isKingInCheck(board, color, moveHistory, secondEmptyField));
   }
 
   private isKingWithoutMove(from: Coordinate, board: Field[][], moveHistory: Move[]) {

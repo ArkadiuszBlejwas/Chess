@@ -27,8 +27,7 @@ export class GameBoardService {
 
   private readonly checkValidatorService = inject(CheckValidatorService);
   private readonly store$ = inject(Store<ChessState>);
-
-
+  
   initBoard() {
     this.store$.dispatch(initBoard());
   }

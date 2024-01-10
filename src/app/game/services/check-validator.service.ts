@@ -8,7 +8,7 @@ import {CheckDestination} from "../model/check-destination";
 import {GameState} from "../state/state";
 import {Piece} from "../model/piece";
 import {PieceType} from "../model/piece-type";
-import {inject, Injectable} from "@angular/core";
+import {inject, Injectable, Injector, ProviderToken} from "@angular/core";
 import {MoveMakerService} from "./move-maker.service";
 import {ContextStrategyService} from "./context-strategy.service";
 
@@ -17,8 +17,14 @@ import {ContextStrategyService} from "./context-strategy.service";
 })
 export class CheckValidatorService {
 
-  private readonly contextStrategyService = inject(ContextStrategyService);
   private readonly moveMakerService = inject(MoveMakerService);
+  private readonly injector = inject(Injector);
+
+  private contextStrategyService!: ContextStrategyService;
+
+  constructor() {
+    this.injectCheckValidatorService();
+  }
 
   willNotKingInCheck(move: Move, board: Field[][], currentColor: PieceColor, moveHistory: Move[]): boolean {
     const copiedBoard: Field[][] = cloneDeep(board);
@@ -44,7 +50,8 @@ export class CheckValidatorService {
 
     for (let coordinate of piecesCoordinates) {
       const checkDestination: CheckDestination = {from: coordinate, color: opponentColor, board};
-      const destinationMap: Map<string, MoveType> = this.contextStrategyService.validateDestination(checkDestination, moveHistory);
+      const destinationMap: Map<string, MoveType> = this.contextStrategyService
+        .validateDestination(checkDestination, moveHistory, false);
 
       if (destinationMap.has(JSON.stringify(kingCoordinate))) {
         return true;
@@ -76,12 +83,13 @@ export class CheckValidatorService {
     }
   }
 
-  private isAnyMoveValid(board: Field[][], color: PieceColor, moveHistory: Move[]) {
+  private isAnyMoveValid(board: Field[][], color: PieceColor, moveHistory: Move[]): boolean {
     const piecesCoordinates: Coordinate[] = this.getPiecesCoordinates(board, color)!;
 
     for (let from of piecesCoordinates) {
       const checkDestination: CheckDestination = { from, color, board };
-      const destinationMap: Map<string, MoveType> = this.contextStrategyService.validateDestination(checkDestination, moveHistory);
+      const destinationMap: Map<string, MoveType> = this.contextStrategyService
+        .validateDestination(checkDestination, moveHistory, false);
 
       for (let [coordinate, moveType] of destinationMap) {
         const piece: Piece = board[from.row][from.column].piece!;
@@ -122,5 +130,15 @@ export class CheckValidatorService {
       }
     }
     return piecesCoordinates;
+  }
+
+  private async injectCheckValidatorService() {
+    this.contextStrategyService = await this.get<ContextStrategyService>(() =>
+      import('./context-strategy.service').then((m) => m.ContextStrategyService)
+    );
+  }
+
+  private async get<T>(providerLoader: () => Promise<ProviderToken<T>>) {
+    return this.injector.get(await providerLoader());
   }
 }
