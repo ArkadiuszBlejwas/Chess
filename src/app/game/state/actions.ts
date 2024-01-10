@@ -1,8 +1,8 @@
 import {createAction, props} from "@ngrx/store";
-import {Move} from "../domain/model/move";
-import {Field} from "../domain/model/field";
-import {Coordinate} from "../domain/model/coordinate";
-import {PieceType} from "../domain/model/piece-type";
+import {Move} from "../model/move";
+import {Field} from "../model/field";
+import {Coordinate} from "../model/coordinate";
+import {PieceType} from "../model/piece-type";
 import {GameState} from "./state";
 
 export const initBoard = createAction('Init board');

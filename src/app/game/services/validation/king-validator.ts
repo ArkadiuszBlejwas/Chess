@@ -1,42 +1,30 @@
 import {ValidationHelper} from "./validation-helper";
 import {ValidationStrategy} from "./validation-strategy";
-import {Coordinate} from "../model/coordinate";
-import {Field} from "../model/field";
-import {MoveType} from "../model/move-type";
-import {Move} from "../model/move";
-import {inject} from "@angular/core";
-import {BoardService} from "../../services/board.service";
-import {PieceType} from "../model/piece-type";
-import {Piece} from "../model/piece";
-import {PieceColor} from "../model/piece-color";
-import {CheckTarget} from "../model/check-target";
+import {Coordinate} from "../../model/coordinate";
+import {Field} from "../../model/field";
+import {MoveType} from "../../model/move-type";
+import {Move} from "../../model/move";
+import {PieceType} from "../../model/piece-type";
+import {Piece} from "../../model/piece";
+import {PieceColor} from "../../model/piece-color";
+import {CheckDestination} from "../../model/check-destination";
 
 export class KingValidator extends ValidationHelper implements ValidationStrategy {
 
-  history!: Move[];
-
-  boardService = inject(BoardService);
-
-  constructor() {
-    super();
-    this.boardService.getHistoryOfMoves()
-      .subscribe(history => this.history = history);
-  }
-
-  checkTarget(from: Coordinate, board: Field[][]): Map<string, MoveType> {
+  checkDestination(from: Coordinate, board: Field[][], moveHistory: Move[]): Map<string, MoveType> {
     const toMap: Map<string, MoveType> = new Map<string, MoveType>;
     const color: PieceColor = this.getOpponentColor(from, board)!;
-    const target: CheckTarget = {from, board, color};
+    const checkDestination: CheckDestination = {from, board, color};
 
-    this.checkRegularAndCapture(target, toMap);
-    this.checkShortCastling(target, toMap);
-    this.checkLongCastling(target, toMap);
+    this.checkRegularAndCapture(checkDestination, toMap);
+    this.checkShortCastling(checkDestination, toMap, moveHistory);
+    this.checkLongCastling(checkDestination, toMap, moveHistory);
 
     return toMap;
   }
 
-  private checkRegularAndCapture(target: CheckTarget, toMap: Map<string, MoveType>) {
-    const {from, board, color} = target;
+  private checkRegularAndCapture(checkDestination: CheckDestination, toMap: Map<string, MoveType>) {
+    const {from, board, color} = checkDestination;
 
     const topCoordinate: Coordinate = {row: from.row - 1, column: from.column};
     const bottomCoordinate: Coordinate = {row: from.row + 1, column: from.column};
@@ -70,22 +58,22 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
     }
   }
 
-  private checkShortCastling(target: CheckTarget, toMap: Map<string, MoveType>) {
-    const {from, board} = target;
+  private checkShortCastling(checkDestination: CheckDestination, toMap: Map<string, MoveType>, moveHistory: Move[]) {
+    const {from, board} = checkDestination;
     const to = {row: from.row, column: from.column + 2};
     const areEmptyFields = this.getAreEmptyFieldsForShortCastling(from, board);
 
-    if (areEmptyFields && this.isKingWithoutMove(from, board) && this.isRookWithoutMove(from, to, board)) {
+    if (areEmptyFields && this.isKingWithoutMove(from, board, moveHistory) && this.isRookWithoutMove(from, to, board, moveHistory)) {
       toMap.set(JSON.stringify(to), MoveType.CASTLING);
     }
   }
 
-  private checkLongCastling(target: CheckTarget, toMap: Map<string, MoveType>) {
-    const {from, board} = target;
+  private checkLongCastling(checkDestination: CheckDestination, toMap: Map<string, MoveType>, moveHistory: Move[]) {
+    const {from, board} = checkDestination;
     const to = {row: from.row, column: from.column - 2};
     const areEmptyFields = this.getAreEmptyFieldsForLongCastling(from, board);
 
-    if (areEmptyFields && this.isKingWithoutMove(from, board) && this.isRookWithoutMove(from, to, board)) {
+    if (areEmptyFields && this.isKingWithoutMove(from, board, moveHistory) && this.isRookWithoutMove(from, to, board, moveHistory)) {
       toMap.set(JSON.stringify(to), MoveType.CASTLING);
     }
   }
@@ -101,12 +89,12 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
       && this.isEmptyField({ row: from.row, column: from.column - 3 }, board);
   }
 
-  private isKingWithoutMove(from: Coordinate, board: Field[][]) {
+  private isKingWithoutMove(from: Coordinate, board: Field[][], moveHistory: Move[]) {
     const king: Piece | undefined = this.getPiece(from, board);
-    return this.hasKingNoHistory(king);
+    return this.hasKingNoHistory(king, moveHistory);
   }
 
-  private isRookWithoutMove(from: Coordinate, to: Coordinate, board: Field[][]) {
+  private isRookWithoutMove(from: Coordinate, to: Coordinate, board: Field[][], moveHistory: Move[]) {
     const kingColor = this.getPieceColor(from, board);
 
     const column = this.getRookColumn(to);
@@ -115,15 +103,15 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
 
     return this.isRook(piece)
       && this.hasRookProperColor(piece, kingColor)
-      && this.hasRookNoHistory(piece, coordinate);
+      && this.hasRookNoHistory(piece, coordinate, moveHistory);
   }
 
-  private hasKingNoHistory(king: Piece | undefined) {
-    return !this.history.find(move => this.isSamePiece(move, king!));
+  private hasKingNoHistory(king: Piece | undefined, moveHistory: Move[]) {
+    return !moveHistory.find(move => this.isSamePiece(move, king!));
   }
 
-  private hasRookNoHistory(piece: Piece | undefined, coordinate: Coordinate) {
-    return !this.history.find(move => this.isSamePiece(move, piece!) && this.isSameCoordinate(move, coordinate));
+  private hasRookNoHistory(piece: Piece | undefined, coordinate: Coordinate, moveHistory: Move[]) {
+    return !moveHistory.find(move => this.isSamePiece(move, piece!) && this.isSameCoordinate(move, coordinate));
   }
 
   private hasRookProperColor(piece: Piece | undefined, kingColor: PieceColor | undefined) {

@@ -11,16 +11,20 @@ import {
 } from '@angular/core';
 import {CdkDrag} from "@angular/cdk/drag-drop";
 import {CommonModule} from "@angular/common";
-import {Piece} from "../../domain/model/piece";
-import {CheckTarget} from "../../domain/model/check-target";
-import {PieceColor} from "../../domain/model/piece-color";
-import {PieceType} from "../../domain/model/piece-type";
-import {Field} from "../../domain/model/field";
-import {Coordinate} from "../../domain/model/coordinate";
-import {MoveType} from "../../domain/model/move-type";
-import {ContextStrategy} from "../../domain/validation/context-strategy";
+import {Piece} from "../../model/piece";
+import {CheckDestination} from "../../model/check-destination";
+import {PieceColor} from "../../model/piece-color";
+import {PieceType} from "../../model/piece-type";
+import {Field} from "../../model/field";
+import {Coordinate} from "../../model/coordinate";
+import {MoveType} from "../../model/move-type";
+import {ContextStrategyService} from "../../services/context-strategy.service";
 import {Subject, takeUntil} from "rxjs";
-import {BoardService} from "../../services/board.service";
+import {GameBoardService} from "../../services/game-board.service";
+import {Move} from "../../model/move";
+import {MatDialog, MatDialogRef} from "@angular/material/dialog";
+import {PromotionComponent} from "../promotion/promotion.component";
+import {CheckValidatorService} from "../../services/check-validator.service";
 
 @Component({
   selector: 'piece',
@@ -37,8 +41,11 @@ export class PieceComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
+  private readonly contextStrategyService = inject(ContextStrategyService);
+  private readonly checkValidatorService = inject(CheckValidatorService);
+  private readonly gameBoardService = inject(GameBoardService);
   private readonly changeDetector = inject(ChangeDetectorRef);
-  private readonly boardService = inject(BoardService);
+  private readonly matDialog = inject(MatDialog);
 
   @Input()
   row!: number;
@@ -50,25 +57,32 @@ export class PieceComponent implements OnInit, OnDestroy {
   selectedPieceChange = new EventEmitter<Coordinate>;
 
   @Output()
-  targetMapChange = new EventEmitter<Map<string, MoveType>>;
+  destinationMapChange = new EventEmitter<Map<string, MoveType>>;
 
   board!: Field[][];
 
+  moveHistory!: Move[];
+
   currentColor!: PieceColor;
 
-  contextStrategy = new ContextStrategy();
-
   ngOnInit(): void {
-    this.boardService.getBoard()
+    this.gameBoardService.getBoard()
       .pipe(takeUntil(this.destroy$))
       .subscribe(board => {
         this.board = board;
+        this.checkPawnPromotion();
         this.changeDetector.markForCheck();
       });
-    this.boardService.getCurrentColor()
+    this.gameBoardService.getCurrentColor()
       .pipe(takeUntil(this.destroy$))
       .subscribe(color => {
         this.currentColor = color;
+        this.changeDetector.markForCheck();
+      });
+    this.gameBoardService.getMoveHistory()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(moveHistory => {
+        this.moveHistory = moveHistory;
         this.changeDetector.markForCheck();
       });
   }
@@ -91,11 +105,29 @@ export class PieceComponent implements OnInit, OnDestroy {
 
   dragPiece(row: number, column: number) {
     if (this.board[row][column].piece?.color === this.currentColor) {
-      const piece: Piece = this.board[row][column].piece!;
-      const target: CheckTarget = {from: {row, column}, board: this.board};
-      this.targetMapChange.emit(this.contextStrategy.validateTarget(piece.type, target));
+      const checkDestination: CheckDestination = {from: {row, column}, board: this.board};
+
+      this.destinationMapChange.emit(this.getDestinationMap(checkDestination));
       this.selectedPieceChange.emit({row, column});
     }
+  }
+
+  private getDestinationMap(checkDestination: CheckDestination): Map<string, MoveType> {
+    const destinationMap: Map<string, MoveType> = this.contextStrategyService.validateDestination(checkDestination, this.moveHistory);
+
+    for (let [coordinate, moveType] of destinationMap) {
+      const piece: Piece = this.board[checkDestination.from.row][checkDestination.from.column].piece!;
+      const move: Move = {from: checkDestination.from, to: JSON.parse(coordinate), piece, moveType};
+
+      if (this.willKingInCheck(move)) {
+        destinationMap.delete(coordinate);
+      }
+    }
+    return destinationMap;
+  }
+
+  private willKingInCheck(move: Move): boolean {
+    return !this.checkValidatorService.willNotKingInCheck(move, this.board, this.currentColor, this.moveHistory);
   }
 
   private getPieceImageSrc(piece: Piece): string {
@@ -133,6 +165,26 @@ export class PieceComponent implements OnInit, OnDestroy {
       default:
         return '';
     }
+  }
+
+  private checkPawnPromotion() {
+    const piece: Piece | undefined = this.board[this.row][this.column].piece;
+    const isPromotion: boolean = piece?.type === PieceType.PAWN && (this.row === 0 || this.row === 7);
+
+    if (isPromotion) {
+      const dialogRef: MatDialogRef<PromotionComponent> = this.matDialog.open(PromotionComponent, {
+        data: piece?.color
+      });
+
+      dialogRef.afterClosed().subscribe(newPieceType => {
+        this.changePieceType({row: this.row, column: this.column}, newPieceType);
+        this.changeDetector.markForCheck();
+      });
+    }
+  }
+
+  private changePieceType(coordinate: Coordinate, pieceType: PieceType) {
+    this.gameBoardService.changePieceType(coordinate, pieceType);
   }
 
   ngOnDestroy(): void {

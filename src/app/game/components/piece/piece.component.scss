@@ -5,12 +5,14 @@ img {
 
 .piece {
   cursor: grab;
-  transition: all ease-in .5s;
 }
 
-.piece:active {
-  cursor: grabbing;
-  transition: all ease-in .5s;
+//.piece:active {
+//  cursor: grabbing;
+//}
+
+.cdk-drag-dragging {
+  cursor: grabbing !important;
 }
 
 .piece.cdk-drag-placeholder {

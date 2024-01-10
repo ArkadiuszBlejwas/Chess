@@ -1,6 +1,6 @@
-import {Injectable} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {select, Store} from "@ngrx/store";
-import {ChessState, GameState} from "../state/state";
+import {ChessState} from "../state/state";
 import {
   addMoveToHistory,
   changeBoard,
@@ -9,22 +9,25 @@ import {
   initBoard,
   toggleCurrentColor
 } from "../state/actions";
-import {Move} from "../domain/model/move";
+import {Move} from "../model/move";
 import {selectChessState} from "../state/selectors";
 import {distinctUntilChanged, map, Observable} from "rxjs";
 import {isEqual} from "lodash-es";
-import {Field} from "../domain/model/field";
-import {Piece} from "../domain/model/piece";
-import {PieceColor} from "../domain/model/piece-color";
-import {PieceType} from "../domain/model/piece-type";
-import {Coordinate} from "../domain/model/coordinate";
+import {Field} from "../model/field";
+import {Piece} from "../model/piece";
+import {PieceColor} from "../model/piece-color";
+import {PieceType} from "../model/piece-type";
+import {Coordinate} from "../model/coordinate";
+import {CheckValidatorService} from "./check-validator.service";
 
 @Injectable({
   providedIn: 'root'
 })
-export class BoardService {
+export class GameBoardService {
 
-  constructor(private readonly store$: Store<ChessState>) {}
+  private readonly checkValidatorService = inject(CheckValidatorService);
+  private readonly store$ = inject(Store<ChessState>);
+
 
   initBoard() {
     this.store$.dispatch(initBoard());
@@ -42,7 +45,8 @@ export class BoardService {
     this.store$.dispatch(changePieceType({coordinate, pieceType}));
   }
 
-  changeGameState(gameState: GameState) {
+  updateGameState(board: Field[][], currentColor: PieceColor, moveHistory: Move[]) {
+    const gameState = this.checkValidatorService.getGameState(board, currentColor, moveHistory);
     this.store$.dispatch(changeGameState({gameState}));
   }
 
@@ -64,22 +68,10 @@ export class BoardService {
     this.store$.dispatch(addMoveToHistory({move}));
   }
 
-  getHistoryOfMoves(): Observable<Move[]> {
+  getMoveHistory(): Observable<Move[]> {
     return this.store$.pipe(
       select(selectChessState),
-      map(state => state.historyMoves),
-      distinctUntilChanged(isEqual));
-  }
-
-  getLastMove(): Observable<Move | undefined> {
-    return this.store$.pipe(
-      select(selectChessState),
-      map(state => {
-        if (state.historyMoves.length > 0) {
-          return state.historyMoves[state.historyMoves.length - 1];
-        }
-        return;
-      }),
+      map(state => state.moveHistory),
       distinctUntilChanged(isEqual));
   }
 
