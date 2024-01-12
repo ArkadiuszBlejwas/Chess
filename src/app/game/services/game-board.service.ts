@@ -1,6 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {select, Store} from "@ngrx/store";
-import {ChessState} from "../state/state";
+import {ChessState, GameState} from "../state/state";
 import {
   addMoveToHistory,
   changeBoard,
@@ -18,34 +18,35 @@ import {Piece} from "../model/piece";
 import {PieceColor} from "../model/piece-color";
 import {PieceType} from "../model/piece-type";
 import {Coordinate} from "../model/coordinate";
-import {CheckValidatorService} from "./check-validator.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameBoardService {
 
-  private readonly checkValidatorService = inject(CheckValidatorService);
   private readonly store$ = inject(Store<ChessState>);
-  
+
   initBoard() {
     this.store$.dispatch(initBoard());
-  }
-
-  changeBoard(board: Field[][]) {
-    this.store$.dispatch(changeBoard({board}));
   }
 
   toggleCurrentColor() {
     this.store$.dispatch(toggleCurrentColor());
   }
 
+  changeBoard(board: Field[][]) {
+    this.store$.dispatch(changeBoard({board}));
+  }
+
+  addMoveToHistory(move: Move) {
+    this.store$.dispatch(addMoveToHistory({move}));
+  }
+
   changePieceType(coordinate: Coordinate, pieceType: PieceType) {
     this.store$.dispatch(changePieceType({coordinate, pieceType}));
   }
 
-  updateGameState(board: Field[][], currentColor: PieceColor, moveHistory: Move[]) {
-    const gameState = this.checkValidatorService.getGameState(board, currentColor, moveHistory);
+  updateGameState(gameState: GameState) {
     this.store$.dispatch(changeGameState({gameState}));
   }
 
@@ -63,14 +64,17 @@ export class GameBoardService {
       distinctUntilChanged(isEqual));
   }
 
-  addMoveToHistory(move: Move) {
-    this.store$.dispatch(addMoveToHistory({move}));
-  }
-
   getMoveHistory(): Observable<Move[]> {
     return this.store$.pipe(
       select(selectChessState),
       map(state => state.moveHistory),
+      distinctUntilChanged(isEqual));
+  }
+
+  getGameState(): Observable<GameState> {
+    return this.store$.pipe(
+      select(selectChessState),
+      map(state => state.gameState),
       distinctUntilChanged(isEqual));
   }
 

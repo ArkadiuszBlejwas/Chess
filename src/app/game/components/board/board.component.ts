@@ -13,6 +13,9 @@ import {Move} from "../../model/move";
 import {PieceComponent} from "../piece/piece.component";
 import {AxesComponent} from "../axes/axes.component";
 import {MoveMakerService} from "../../services/move-maker.service";
+import {CheckValidatorService} from "../../services/check-validator.service";
+import {GameState} from "../../state/state";
+import {PieceType} from "../../model/piece-type";
 
 @Component({
   selector: 'board',
@@ -31,6 +34,7 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
+  private readonly checkValidatorService = inject(CheckValidatorService);
   private readonly moveMakerService = inject(MoveMakerService);
   private readonly gameBoardService = inject(GameBoardService);
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -91,7 +95,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   isCapture(row: number, column: number): boolean {
-    const opponentPiece = this.board[row][column].piece;
+    const opponentPiece: Piece | undefined = this.board[row][column].piece;
     return this.isDestination(row, column) && !!opponentPiece && opponentPiece?.color !== this.currentColor;
   }
 
@@ -108,18 +112,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       const piece: Piece = this.board[from.row][from.column].piece!;
       const move: Move = {from, to, moveType, piece};
 
-      switch (moveType) {
-        case MoveType.REGULAR:
-        case MoveType.CAPTURE:
-          this.makeRegularOrCaptureMove(move);
-          break;
-        case MoveType.EN_PASSANT:
-          this.makeEnPassantMove(move);
-          break;
-        case MoveType.CASTLING:
-          this.makeCastlingMove(move);
-          break;
-      }
+      this.makeMove(move);
       this.addMoveToHistory(move);
       this.toggleCurrentColor();
       this.updateGameState();
@@ -128,20 +121,13 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.clearSelects();
   }
 
-  private makeRegularOrCaptureMove(move: Move) {
-    this.moveMakerService.makeRegularOrCaptureMove(move, this.board);
+  private makeMove(move: Move, board: Field[][] = this.board) {
+    this.moveMakerService.makeMove(move, board);
   }
-
-  private makeEnPassantMove(move: Move) {
-    this.moveMakerService.makeEnPassantMove(move, this.board);
-  }
-
-  private makeCastlingMove(move: Move) {
-    this.moveMakerService.makeCastlingMove(move, this.board);
-  }
-
   private updateGameState() {
-    this.gameBoardService.updateGameState(this.board, this.currentColor, this.moveHistory);
+    const gameState: GameState = this.checkFiftyMove() || this.checkTripleRepetition() ||
+      this.checkValidatorService.getGameState(this.board, this.currentColor, this.moveHistory);
+    this.gameBoardService.updateGameState(gameState);
   }
 
   private addMoveToHistory(move: Move) {
@@ -159,6 +145,53 @@ export class BoardComponent implements OnInit, OnDestroy {
   private clearSelects() {
     this.destinationMap.clear();
     this.selectedPiece = undefined;
+  }
+
+  private checkFiftyMove(): GameState | undefined {
+    const length: number = this.moveHistory.length;
+
+    if (length > 100) {
+      for (let i: number = length - 1; i >= length; i--) {
+        const move: Move = this.moveHistory[i];
+        const type: PieceType = move.piece.type;
+        if (move.moveType !== MoveType.REGULAR || type === PieceType.PAWN) {
+          return;
+        }
+      }
+      return GameState.DRAW;
+    }
+    return;
+  }
+
+  private checkTripleRepetition(): GameState | undefined {
+    const lastNonRegularMoveIndex: number = this.getLastNonRegularMoveIndex();
+    const omittedMoves: Move[] = this.moveHistory.slice(0, lastNonRegularMoveIndex);
+
+    const simulatedBoard: Field[][] = this.gameBoardService.createBoard();
+    omittedMoves.forEach(move => this.makeMove(move, simulatedBoard));
+
+    let counter = 0;
+    for (let i = lastNonRegularMoveIndex; i < this.moveHistory.length; i++) {
+      this.makeMove(cloneDeep(this.moveHistory[i]), simulatedBoard);
+
+      if (JSON.stringify(this.board) === JSON.stringify(simulatedBoard)) {
+        counter++;
+      }
+      if (counter === 3) {
+        return GameState.DRAW;
+      }
+    }
+    return;
+  }
+
+  private getLastNonRegularMoveIndex(): number {
+    for (let index = this.moveHistory.length - 1; index >= 0; index--) {
+      const element: Move = this.moveHistory[index];
+      if (element.moveType !== MoveType.REGULAR) {
+        return index;
+      }
+    }
+    return 0;
   }
 
   ngOnDestroy(): void {

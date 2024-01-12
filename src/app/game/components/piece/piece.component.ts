@@ -25,6 +25,7 @@ import {Move} from "../../model/move";
 import {MatDialog, MatDialogRef} from "@angular/material/dialog";
 import {PromotionComponent} from "../promotion/promotion.component";
 import {CheckValidatorService} from "../../services/check-validator.service";
+import {GameState} from "../../state/state";
 
 @Component({
   selector: 'piece',
@@ -63,6 +64,8 @@ export class PieceComponent implements OnInit, OnDestroy {
 
   moveHistory!: Move[];
 
+  gameState!: GameState;
+
   currentColor!: PieceColor;
 
   ngOnInit(): void {
@@ -81,14 +84,20 @@ export class PieceComponent implements OnInit, OnDestroy {
       });
     this.gameBoardService.getMoveHistory()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(moveHistory => {
-        this.moveHistory = moveHistory;
+      .subscribe(history => {
+        this.moveHistory = history;
+        this.changeDetector.markForCheck();
+      });
+    this.gameBoardService.getGameState()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(gameState => {
+        this.gameState = gameState;
         this.changeDetector.markForCheck();
       });
   }
 
   selectPiece(row: number, column: number, event: MouseEvent) {
-    if (this.board[row][column].piece?.color === this.currentColor) {
+    if (this.isPieceCurrentColor(row, column) && this.isNotEndGame()) {
       event.stopPropagation();
       this.dragPiece(row, column);
     }
@@ -104,7 +113,7 @@ export class PieceComponent implements OnInit, OnDestroy {
   }
 
   dragPiece(row: number, column: number) {
-    if (this.board[row][column].piece?.color === this.currentColor) {
+    if (this.isPieceCurrentColor(row, column) && this.isNotEndGame()) {
       const checkDestination: CheckDestination = {from: {row, column}, board: this.board};
 
       this.destinationMapChange.emit(this.getDestinationMap(checkDestination));
@@ -113,7 +122,8 @@ export class PieceComponent implements OnInit, OnDestroy {
   }
 
   private getDestinationMap(checkDestination: CheckDestination): Map<string, MoveType> {
-    const destinationMap: Map<string, MoveType> = this.contextStrategyService.validateDestination(checkDestination, this.moveHistory);
+    const destinationMap: Map<string, MoveType> = this.contextStrategyService
+      .validateDestination(checkDestination, this.moveHistory);
 
     for (let [coordinate, moveType] of destinationMap) {
       const piece: Piece = this.board[checkDestination.from.row][checkDestination.from.column].piece!;
@@ -185,6 +195,16 @@ export class PieceComponent implements OnInit, OnDestroy {
 
   private changePieceType(coordinate: Coordinate, pieceType: PieceType) {
     this.gameBoardService.changePieceType(coordinate, pieceType);
+  }
+
+  private isPieceCurrentColor(row: number, column: number): boolean {
+    return this.board[row][column].piece?.color === this.currentColor;
+  }
+
+  private isNotEndGame(): boolean {
+    return this.gameState !== GameState.CHECK_MATE
+      && this.gameState !== GameState.STALE_MATE
+      && this.gameState !== GameState.DRAW;
   }
 
   ngOnDestroy(): void {

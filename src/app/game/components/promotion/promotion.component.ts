@@ -48,14 +48,13 @@ export class PromotionComponent {
     return this.getColorLetter(color) + this.getPieceTypeSVG(pieceType);
   }
 
-  private getColorLetter(pieceColor?: PieceColor): string {
+  private getColorLetter(pieceColor: PieceColor): string {
     if (pieceColor === PieceColor.WHITE) {
       return 'w';
     }
-    if (pieceColor === PieceColor.BLACK) {
+    else {
       return 'b';
     }
-    return '';
   }
 
   private getPieceTypeSVG(pieceType?: PieceType): string {

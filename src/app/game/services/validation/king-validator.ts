@@ -17,17 +17,17 @@ export class KingValidator extends ValidationHelper implements ValidationStrateg
 
   checkDestination(from: Coordinate, board: Field[][], moveHistory: Move[], checkCastling: boolean): Map<string, MoveType> {
     const toMap: Map<string, MoveType> = new Map<string, MoveType>;
-    const color: PieceColor = this.getOpponentColor(from, board)!;
-    const checkDestination: CheckDestination = {from, board, color};
+    const opponentColor: PieceColor = this.getOpponentColor(from, board)!;
+    const checkDestination: CheckDestination = {from, board, color: opponentColor};
 
     this.checkRegularAndCapture(checkDestination, toMap);
 
 
     if (checkCastling) {
-      const opponentColor: PieceColor = this.getPieceColor(from, board)!;
+      const color: PieceColor = this.getPieceColor(from, board)!;
 
-      this.checkShortCastling(checkDestination, opponentColor, toMap, moveHistory);
-      this.checkLongCastling(checkDestination, opponentColor, toMap, moveHistory);
+      this.checkShortCastling(checkDestination, color, toMap, moveHistory);
+      this.checkLongCastling(checkDestination, color, toMap, moveHistory);
     }
 
     return toMap;

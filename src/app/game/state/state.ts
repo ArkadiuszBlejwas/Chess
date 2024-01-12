@@ -14,4 +14,5 @@ export enum GameState {
   STALE_MATE = 'STALE_MATE',
   CHECK = 'CHECK',
   CHECK_MATE = 'CHECK_MATE',
+  DRAW = 'DRAW'
 }

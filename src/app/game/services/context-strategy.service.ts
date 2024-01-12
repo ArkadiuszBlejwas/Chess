@@ -9,7 +9,7 @@ import {BishopValidator} from "./validation/bishop-validator";
 import {MoveType} from "../model/move-type";
 import {CheckDestination} from "../model/check-destination";
 import {Move} from "../model/move";
-import {Injectable, Injector} from "@angular/core";
+import {Injectable} from "@angular/core";
 
 @Injectable({
   providedIn: 'root'
