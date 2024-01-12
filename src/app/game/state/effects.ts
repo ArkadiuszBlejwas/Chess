@@ -2,12 +2,12 @@ import {inject, Injectable} from "@angular/core";
 import {Actions, createEffect, ofType} from "@ngrx/effects";
 import {initBoard, initBoardSuccessfully, resetChessState} from "./actions";
 import {map, of, switchMap} from "rxjs";
-import {BoardService} from "../services/board.service";
+import {GameBoardService} from "../services/game-board.service";
 
 @Injectable()
 export class ChessEffects {
 
-  private boardService = inject(BoardService);
+  private boardService = inject(GameBoardService);
   private actions$ = inject(Actions);
 
   initBoard$ = createEffect(() => this.actions$.pipe(

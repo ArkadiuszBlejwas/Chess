@@ -1,7 +1,15 @@
 <h1 mat-dialog-title>Choose piece</h1>
 <div mat-dialog-actions>
-  <button mat-button [mat-dialog-close]="PieceType.BISHOP"><img [src]="'assets/pieces/cardinal/wb.svg'"></button>
-  <button mat-button [mat-dialog-close]="PieceType.KNIGHT"><img [src]="'assets/pieces/cardinal/wn.svg'"></button>
-  <button mat-button [mat-dialog-close]="PieceType.ROOK"><img [src]="'assets/pieces/cardinal/wr.svg'"></button>
-  <button mat-button [mat-dialog-close]="PieceType.QUEEN"><img [src]="'assets/pieces/cardinal/wq.svg'"></button>
+  <button mat-button [mat-dialog-close]="PieceType.BISHOP">
+    <img [src]="getPieceImageSrc(PieceType.BISHOP, pieceColor)" alt="bishop">
+  </button>
+  <button mat-button [mat-dialog-close]="PieceType.KNIGHT">
+    <img [src]="getPieceImageSrc(PieceType.KNIGHT, pieceColor)" alt="knight">
+  </button>
+  <button mat-button [mat-dialog-close]="PieceType.ROOK">
+    <img [src]="getPieceImageSrc(PieceType.ROOK, pieceColor)" alt="rook">
+  </button>
+  <button mat-button [mat-dialog-close]="PieceType.QUEEN">
+    <img [src]="getPieceImageSrc(PieceType.QUEEN, pieceColor)" alt="queen">
+  </button>
 </div>

@@ -1,0 +1,24 @@
+img {
+  width: 60px;
+  height: 60px;
+}
+
+.piece {
+  cursor: grab;
+}
+
+//.piece:active {
+//  cursor: grabbing;
+//}
+
+.cdk-drag-dragging {
+  cursor: grabbing !important;
+}
+
+.piece.cdk-drag-placeholder {
+  display: none;
+}
+
+.piece:not(.cdk-drag-preview) {
+  transform: none !important;
+}

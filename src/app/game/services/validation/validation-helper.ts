@@ -1,7 +1,7 @@
-import {Coordinate} from "../model/coordinate";
-import {Field} from "../model/field";
-import {PieceColor} from "../model/piece-color";
-import {Piece} from "../model/piece";
+import {Coordinate} from "../../model/coordinate";
+import {Field} from "../../model/field";
+import {PieceColor} from "../../model/piece-color";
+import {Piece} from "../../model/piece";
 
 export abstract class ValidationHelper {
 

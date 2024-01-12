@@ -1,14 +1,15 @@
-import {Component} from '@angular/core';
-import {NgTemplateOutlet} from "@angular/common";
+import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {CommonModule} from "@angular/common";
 
 @Component({
   selector: 'axes',
   standalone: true,
   imports: [
-    NgTemplateOutlet
+    CommonModule
   ],
   templateUrl: './axes.component.html',
-  styleUrl: './axes.component.scss'
+  styleUrl: './axes.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AxesComponent {
 

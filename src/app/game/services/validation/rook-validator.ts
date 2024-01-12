@@ -1,13 +1,13 @@
 import {ValidationHelper} from "./validation-helper";
 import {ValidationStrategy} from "./validation-strategy";
-import {Coordinate} from "../model/coordinate";
-import {Field} from "../model/field";
-import {MoveType} from "../model/move-type";
-import {PieceColor} from "../model/piece-color";
+import {Coordinate} from "../../model/coordinate";
+import {Field} from "../../model/field";
+import {MoveType} from "../../model/move-type";
+import {PieceColor} from "../../model/piece-color";
 
 export class RookValidator extends ValidationHelper implements ValidationStrategy {
 
-  checkTarget(from: Coordinate, board: Field[][]): Map<string, MoveType> {
+  checkDestination(from: Coordinate, board: Field[][]): Map<string, MoveType> {
     const toMap: Map<string, MoveType> = new Map<string, MoveType>;
     const color: PieceColor = this.getOpponentColor(from, board)!;
 
@@ -23,7 +23,7 @@ export class RookValidator extends ValidationHelper implements ValidationStrateg
 
     for (let i = 0; i < 7; i++) {
 
-      topCoordinate = { row: topCoordinate.row - 1, column: topCoordinate.column }
+      topCoordinate = { row: topCoordinate.row - 1, column: topCoordinate.column };
       if (topContinue) {
         if (this.isEmptyField(topCoordinate, board)) {
           toMap.set(JSON.stringify(topCoordinate), MoveType.REGULAR);
@@ -36,7 +36,7 @@ export class RookValidator extends ValidationHelper implements ValidationStrateg
         }
       }
 
-      rightCoordinate = { row: rightCoordinate.row, column: rightCoordinate.column + 1 }
+      rightCoordinate = { row: rightCoordinate.row, column: rightCoordinate.column + 1 };
       if (rightContinue) {
         if (this.isEmptyField(rightCoordinate, board)) {
           toMap.set(JSON.stringify(rightCoordinate), MoveType.REGULAR);
@@ -49,7 +49,7 @@ export class RookValidator extends ValidationHelper implements ValidationStrateg
         }
       }
 
-      leftCoordinate = { row: leftCoordinate.row, column: leftCoordinate.column - 1 }
+      leftCoordinate = { row: leftCoordinate.row, column: leftCoordinate.column - 1 };
       if (leftContinue) {
         if (this.isEmptyField(leftCoordinate, board)) {
           toMap.set(JSON.stringify(leftCoordinate), MoveType.REGULAR);
@@ -62,7 +62,7 @@ export class RookValidator extends ValidationHelper implements ValidationStrateg
         }
       }
 
-      bottomCoordinate = { row: bottomCoordinate.row + 1, column: bottomCoordinate.column }
+      bottomCoordinate = { row: bottomCoordinate.row + 1, column: bottomCoordinate.column };
       if (bottomContinue) {
         if (this.isEmptyField(bottomCoordinate, board)) {
           toMap.set(JSON.stringify(bottomCoordinate), MoveType.REGULAR);

@@ -1,13 +1,13 @@
 import {ValidationHelper} from "./validation-helper";
 import {ValidationStrategy} from "./validation-strategy";
-import {Coordinate} from "../model/coordinate";
-import {Field} from "../model/field";
-import {MoveType} from "../model/move-type";
-import {PieceColor} from "../model/piece-color";
+import {Coordinate} from "../../model/coordinate";
+import {Field} from "../../model/field";
+import {MoveType} from "../../model/move-type";
+import {PieceColor} from "../../model/piece-color";
 
 export class BishopValidator extends ValidationHelper implements ValidationStrategy {
 
-  checkTarget(from: Coordinate, board: Field[][]): Map<string, MoveType> {
+  checkDestination(from: Coordinate, board: Field[][]): Map<string, MoveType> {
     const toMap: Map<string, MoveType> = new Map<string, MoveType>;
     const color: PieceColor = this.getOpponentColor(from, board)!;
 
@@ -23,7 +23,7 @@ export class BishopValidator extends ValidationHelper implements ValidationStrat
 
     for (let i = 0; i < 7; i++) {
 
-      leftTopCoordinate = { row: leftTopCoordinate.row - 1, column: leftTopCoordinate.column - 1 }
+      leftTopCoordinate = { row: leftTopCoordinate.row - 1, column: leftTopCoordinate.column - 1 };
       if (leftTopContinue) {
         if (this.isEmptyField(leftTopCoordinate, board)) {
           toMap.set(JSON.stringify(leftTopCoordinate), MoveType.REGULAR);
@@ -36,7 +36,7 @@ export class BishopValidator extends ValidationHelper implements ValidationStrat
         }
       }
 
-      rightTopCoordinate = { row: rightTopCoordinate.row - 1, column: rightTopCoordinate.column + 1 }
+      rightTopCoordinate = { row: rightTopCoordinate.row - 1, column: rightTopCoordinate.column + 1 };
       if (rightTopContinue) {
         if (this.isEmptyField(rightTopCoordinate, board)) {
           toMap.set(JSON.stringify(rightTopCoordinate), MoveType.REGULAR);
@@ -49,7 +49,7 @@ export class BishopValidator extends ValidationHelper implements ValidationStrat
         }
       }
 
-      leftBottomCoordinate = { row: leftBottomCoordinate.row + 1, column: leftBottomCoordinate.column - 1 }
+      leftBottomCoordinate = { row: leftBottomCoordinate.row + 1, column: leftBottomCoordinate.column - 1 };
       if (leftBottomContinue) {
         if (this.isEmptyField(leftBottomCoordinate, board)) {
           toMap.set(JSON.stringify(leftBottomCoordinate), MoveType.REGULAR);
@@ -62,7 +62,7 @@ export class BishopValidator extends ValidationHelper implements ValidationStrat
         }
       }
 
-      rightBottomCoordinate = { row: rightBottomCoordinate.row + 1, column: rightBottomCoordinate.column + 1 }
+      rightBottomCoordinate = { row: rightBottomCoordinate.row + 1, column: rightBottomCoordinate.column + 1 };
       if (rightBottomContinue) {
         if (this.isEmptyField(rightBottomCoordinate, board)) {
           toMap.set(JSON.stringify(rightBottomCoordinate), MoveType.REGULAR);

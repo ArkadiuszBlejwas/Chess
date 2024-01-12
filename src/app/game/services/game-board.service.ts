@@ -1,34 +1,53 @@
-import {Injectable} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {select, Store} from "@ngrx/store";
-import {ChessState} from "../state/state";
-import {addMoveToHistory, changeBoard, initBoard, toggleCurrentColor} from "../state/actions";
-import {Move} from "../domain/model/move";
+import {ChessState, GameState} from "../state/state";
+import {
+  addMoveToHistory,
+  changeBoard,
+  changeGameState,
+  changePieceType,
+  initBoard,
+  toggleCurrentColor
+} from "../state/actions";
+import {Move} from "../model/move";
 import {selectChessState} from "../state/selectors";
 import {distinctUntilChanged, map, Observable} from "rxjs";
 import {isEqual} from "lodash-es";
-import {Field} from "../domain/model/field";
-import {Piece} from "../domain/model/piece";
-import {PieceColor} from "../domain/model/piece-color";
-import {PieceType} from "../domain/model/piece-type";
+import {Field} from "../model/field";
+import {Piece} from "../model/piece";
+import {PieceColor} from "../model/piece-color";
+import {PieceType} from "../model/piece-type";
+import {Coordinate} from "../model/coordinate";
 
 @Injectable({
   providedIn: 'root'
 })
-export class BoardService {
+export class GameBoardService {
 
-  constructor(private readonly store$: Store<ChessState>) {
-  }
+  private readonly store$ = inject(Store<ChessState>);
 
   initBoard() {
     this.store$.dispatch(initBoard());
+  }
+
+  toggleCurrentColor() {
+    this.store$.dispatch(toggleCurrentColor());
   }
 
   changeBoard(board: Field[][]) {
     this.store$.dispatch(changeBoard({board}));
   }
 
-  toggleCurrentColor() {
-    this.store$.dispatch(toggleCurrentColor());
+  addMoveToHistory(move: Move) {
+    this.store$.dispatch(addMoveToHistory({move}));
+  }
+
+  changePieceType(coordinate: Coordinate, pieceType: PieceType) {
+    this.store$.dispatch(changePieceType({coordinate, pieceType}));
+  }
+
+  updateGameState(gameState: GameState) {
+    this.store$.dispatch(changeGameState({gameState}));
   }
 
   getCurrentColor(): Observable<PieceColor> {
@@ -45,26 +64,17 @@ export class BoardService {
       distinctUntilChanged(isEqual));
   }
 
-  addMoveToHistory(move: Move) {
-    this.store$.dispatch(addMoveToHistory({move}));
-  }
-
-  getHistoryOfMoves(): Observable<Move[]> {
+  getMoveHistory(): Observable<Move[]> {
     return this.store$.pipe(
       select(selectChessState),
-      map(state => state.historyMoves),
+      map(state => state.moveHistory),
       distinctUntilChanged(isEqual));
   }
 
-  getLastMove(): Observable<Move | undefined> {
+  getGameState(): Observable<GameState> {
     return this.store$.pipe(
       select(selectChessState),
-      map(state => {
-        if (state.historyMoves.length > 0) {
-          return state.historyMoves[state.historyMoves.length - 1];
-        }
-        return;
-      }),
+      map(state => state.gameState),
       distinctUntilChanged(isEqual));
   }
 

@@ -1,18 +1,17 @@
-import {Component, Inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Inject} from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
   MatDialogClose,
   MatDialogContent,
-  MatDialogRef,
   MatDialogTitle
 } from "@angular/material/dialog";
 import {MatButtonModule} from "@angular/material/button";
 import {FormsModule} from "@angular/forms";
 import {MatInputModule} from "@angular/material/input";
 import {MatFormFieldModule} from "@angular/material/form-field";
-import {Piece} from "../../domain/model/piece";
-import {PieceType} from "../../domain/model/piece-type";
+import {PieceType} from "../../model/piece-type";
+import {PieceColor} from "../../model/piece-color";
 
 @Component({
   selector: 'promotion',
@@ -28,18 +27,48 @@ import {PieceType} from "../../domain/model/piece-type";
     MatDialogClose,
   ],
   templateUrl: './promotion.component.html',
-  styleUrl: './promotion.component.scss'
+  styleUrl: './promotion.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PromotionComponent {
-  constructor(
-    public dialogRef: MatDialogRef<PromotionComponent>,
-    // @Inject(MAT_DIALOG_DATA) public data: Piece,
-  ) {}
-
-  onNoClick(): void {
-    // this.data.type = PieceType.QUEEN;
-    this.dialogRef.close();
-  }
 
   protected readonly PieceType = PieceType;
+
+  pieceColor!: PieceColor;
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: PieceColor) {
+    this.pieceColor = data;
+  }
+
+  getPieceImageSrc(pieceType: PieceType, color: PieceColor): string {
+    return 'assets/pieces/cardinal/' + this.getPieceFileImage(pieceType, color);
+  }
+
+  private getPieceFileImage(pieceType: PieceType, color: PieceColor): string {
+    return this.getColorLetter(color) + this.getPieceTypeSVG(pieceType);
+  }
+
+  private getColorLetter(pieceColor: PieceColor): string {
+    if (pieceColor === PieceColor.WHITE) {
+      return 'w';
+    }
+    else {
+      return 'b';
+    }
+  }
+
+  private getPieceTypeSVG(pieceType?: PieceType): string {
+    switch (pieceType) {
+      case PieceType.QUEEN:
+        return 'q.svg'
+      case PieceType.BISHOP:
+        return 'b.svg'
+      case PieceType.KNIGHT:
+        return 'n.svg'
+      case PieceType.ROOK:
+        return 'r.svg'
+      default:
+        return '';
+    }
+  }
 }
